@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkAboutIt — AI 圆桌会议</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep: #0a0a0f;
+    --bg-surface: #111118;
+    --bg-card: rgba(18, 18, 28, 0.55);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-glow: rgba(0, 240, 255, 0.2);
+    --accent: #00f0ff;
+    --accent-dim: rgba(0, 240, 255, 0.15);
+    --accent-glow: rgba(0, 240, 255, 0.35);
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --text-muted: #5f6368;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Subtle animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 30%, rgba(0, 240, 255, 0.03) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 70%, rgba(0, 240, 255, 0.02) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Grid dots overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== LAYOUT ===== */
+  .app-container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 32px 48px;
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 20px 0 32px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 32px;
+  }
+  .header-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), #0088cc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 24px var(--accent-dim), 0 0 60px rgba(0, 240, 255, 0.08);
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #ffffff 0%, #b0d4f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-subtitle {
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    position: relative;
+    top: 2px;
+  }
+  .header-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--accent);
+    opacity: 0.8;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--accent-glow); }
+    50% { opacity: 0.4; box-shadow: 0 0 14px var(--accent-glow); }
+  }
+
+  /* ===== MAIN GRID ===== */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ===== PERSONA PANEL ===== */
+  .persona-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .panel-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .persona-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+  }
+  .persona-card:hover {
+    border-color: var(--border-glow);
+    background: rgba(24, 24, 40, 0.7);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.06), inset 0 0 20px rgba(0, 240, 255, 0.02);
+    transform: translateX(3px);
+  }
+  .persona-card.checked {
+    border-color: rgba(0, 240, 255, 0.35);
+    background: rgba(0, 240, 255, 0.06);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.08);
+  }
+  .persona-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .persona-avatar.jobs    { background: linear-gradient(135deg, #2d2d2d, #555); }
+  .persona-avatar.musk    { background: linear-gradient(135deg, #1a3a5c, #2d6aa0); }
+  .persona-avatar.naval   { background: linear-gradient(135deg, #3d2b1f, #6b4c3b); }
+  .persona-avatar.zhangym { background: linear-gradient(135deg, #8b1a1a, #cc3333); }
+  .persona-avatar.zhangxl { background: linear-gradient(135deg, #1a5c2a, #338844); }
+  .persona-info { flex: 1; min-width: 0; }
+  .persona-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .persona-role { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .persona-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+    font-size: 12px;
+    color: transparent;
+  }
+  .persona-card.checked .persona-checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0f;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+  }
+
+  /* ===== CENTER AREA ===== */
+  .center-area {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Round Table */
+  .round-table-section {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 40px 32px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .round-table-section::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.04) 0%, transparent 70%);
+    border: 1px solid rgba(0, 240, 255, 0.08);
+    pointer-events: none;
+  }
+  .round-table-section::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.02) 0%, transparent 60%);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    pointer-events: none;
+  }
+  .table-label {
+    text-align: center;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .avatars-semicircle {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 40px;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+  }
+  .table-avatar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .table-avatar-wrap:hover {
+    transform: translateY(-6px);
+  }
+  .table-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    border: 2px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), 0 8px 24px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .table-avatar.jobs    { background: linear-gradient(135deg, #2d2d2d, #555); }
+  .table-avatar.musk    { background: linear-gradient(135deg, #1a3a5c, #2d6aa0); }
+  .table-avatar.naval   { background: linear-gradient(135deg, #3d2b1f, #6b4c3b); }
+  .table-avatar.zhangym { background: linear-gradient(135deg, #8b1a1a, #cc3333); }
+  .table-avatar.zhangxl { background: linear-gradient(135deg, #1a5c2a, #338844); }
+  .table-avatar-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 80px;
+    white-space: nowrap;
+  }
+  .table-avatar-name.active {
+    color: var(--accent);
+  }
+
+  /* Topic Controls */
+  .topic-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+  .topic-input-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .topic-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  .topic-input::placeholder {
+    color: var(--text-muted);
+  }
+  .topic-input:focus {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.06);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .round-slider-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .round-slider-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .round-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    outline: none;
+    cursor: pointer;
+  }
+  .round-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #0a0a0f;
+    box-shadow: 0 0 16px var(--accent-glow), 0 2px 8px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .round-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+  .round-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 18px;
+    text-align: center;
+  }
+  .btn-start {
+    margin-left: auto;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--accent), #00c8e0);
+    color: #0a0a0f;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 20px rgba(0, 240, 255, 0.25), 0 0 40px rgba(0, 240, 255, 0.08);
+    white-space: nowrap;
+  }
+  .btn-start:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 28px rgba(0, 240, 255, 0.35), 0 0 60px rgba(0, 240, 255, 0.12);
+  }
+  .btn-start:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px rgba(0, 240, 255, 0.2);
+  }
+
+  /* ===== DISCUSSION AREA ===== */
+  .discussion-section {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    overflow-y: auto;
+    max-height: 420px;
+  }
+  .discussion-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .discussion-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-glow), transparent);
+  }
+  .msg-bubble {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: msg-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .msg-bubble:nth-child(2) { animation-delay: 0.1s; }
+  .msg-bubble:nth-child(3) { animation-delay: 0.2s; }
+  .msg-bubble:nth-child(4) { animation-delay: 0.3s; }
+
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .msg-avatar.jobs    { background: linear-gradient(135deg, #2d2d2d, #555); }
+  .msg-avatar.musk    { background: linear-gradient(135deg, #1a3a5c, #2d6aa0); }
+  .msg-avatar.naval   { background: linear-gradient(135deg, #3d2b1f, #6b4c3b); }
+  .msg-avatar.zhangym { background: linear-gradient(135deg, #8b1a1a, #cc3333); }
+  .msg-avatar.zhangxl { background: linear-gradient(135deg, #1a5c2a, #338844); }
+  .msg-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .msg-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .msg-name {
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .msg-name.jobs    { color: #b0b0b0; }
+  .msg-name.musk    { color: #5b9bd5; }
+  .msg-name.naval   { color: #c4956a; }
+  .msg-name.zhangym { color: #e06060; }
+  .msg-name.zhangxl { color: #5bb85b; }
+  .msg-time {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .msg-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+    padding: 12px 16px;
+    border-left: 3px solid transparent;
+  }
+  .msg-text.jobs    { border-left-color: #b0b0b0; }
+  .msg-text.musk    { border-left-color: #5b9bd5; }
+  .msg-text.naval   { border-left-color: #c4956a; }
+  .msg-text.zhangym { border-left-color: #e06060; }
+  .msg-text.zhangxl { border-left-color: #5bb85b; }
+
+  /* Typing indicator */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+    opacity: 0.7;
+  }
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+  .typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: typing-bounce 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing-bounce {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-6px); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 860px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+    .persona-panel {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .persona-card {
+      flex: 1 1 auto;
+      min-width: 140px;
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .persona-avatar { width: 34px; height: 34px; font-size: 16px; }
+    .avatars-semicircle { gap: 20px; }
+    .table-avatar { width: 48px; height: 48px; font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-logo">💬</div>
+    <div>
+      <h1 class="header-title">TalkAboutIt</h1>
+      <p class="header-subtitle">AI 圆桌会议</p>
+    </div>
+    <div class="header-status">
+      <span class="status-dot"></span>
+      <span>系统就绪</span>
+    </div>
+  </header>
+
+  <!-- ===== MAIN GRID ===== -->
+  <div class="main-grid">
+
+    <!-- LEFT: Persona Selector -->
+    <aside class="persona-panel">
+      <span class="panel-label">👥 选择参与者</span>
+
+      <div class="persona-card checked" data-persona="jobs">
+        <div class="persona-avatar jobs">🍎</div>
+        <div class="persona-info">
+          <div class="persona-name">Steve Jobs</div>
+          <div class="persona-role">Apple 联合创始人</div>
+        </div>
+        <div class="persona-checkbox">✓</div>
+      </div>
+
+      <div class="persona-card checked" data-persona="musk">
+        <div class="persona-avatar musk">🚀</div>
+        <div class="persona-info">
+          <div class="persona-name">Elon Musk</div>
+          <div class="persona-role">Tesla / SpaceX CEO</div>
+        </div>
+        <div class="persona-checkbox">✓</div>
+      </div>
+
+      <div class="persona-card checked" data-persona="naval">
+        <div class="persona-avatar naval">🧘</div>
+        <div class="persona-info">
+          <div class="persona-name">Naval Ravikant</div>
+          <div class="persona-role">AngelList 创始人</div>
+        </div>
+        <div class="persona-checkbox">✓</div>
+      </div>
+
+      <div class="persona-card" data-persona="zhangym">
+        <div class="persona-avatar zhangym">🇨🇳</div>
+        <div class="persona-info">
+          <div class="persona-name">张一鸣</div>
+          <div class="persona-role">字节跳动 创始人</div>
+        </div>
+        <div class="persona-checkbox">✓</div>
+      </div>
+
+      <div class="persona-card" data-persona="zhangxl">
+        <div class="persona-avatar zhangxl">💬</div>
+        <div class="persona-info">
+          <div class="persona-name">张小龙</div>
+          <div class="persona-role">微信 创始人</div>
+        </div>
+        <div class="persona-checkbox">✓</div>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Center Area -->
+    <main class="center-area">
+
+      <!-- Round Table -->
+      <section class="round-table-section">
+        <div class="table-label">🪑 圆桌 · 当前参会者</div>
+        <div class="avatars-semicircle" id="tableAvatars">
+          <div class="table-avatar-wrap">
+            <div class="table-avatar jobs">🍎</div>
+            <span class="table-avatar-name">Steve Jobs</span>
+          </div>
+          <div class="table-avatar-wrap">
+            <div class="table-avatar musk">🚀</div>
+            <span class="table-avatar-name active">Elon Musk</span>
+          </div>
+          <div class="table-avatar-wrap">
+            <div class="table-avatar naval">🧘</div>
+            <span class="table-avatar-name">Naval Ravikant</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Topic Controls -->
+      <section class="topic-controls">
+        <div class="topic-input-row">
+          <input
+            type="text"
+            class="topic-input"
+            placeholder="输入讨论话题..."
+            value="AI 会取代程序员吗？"
+            id="topicInput"
+          />
+        </div>
+        <div class="controls-row">
+          <div class="round-slider-group">
+            <span class="round-slider-label">讨论轮数</span>
+            <input type="range" class="round-slider" min="1" max="5" value="3" id="roundSlider" />
+            <span class="round-value" id="roundValue">3</span>
+          </div>
+          <button class="btn-start" id="btnStart">▶ 开始讨论</button>
+        </div>
+      </section>
+
+      <!-- Discussion Area -->
+      <section class="discussion-section" id="discussionArea">
+        <div class="discussion-label">📜 讨论记录</div>
+
+        <!-- Message 1: Steve Jobs -->
+        <div class="msg-bubble">
+          <div class="msg-avatar jobs">🍎</div>
+          <div class="msg-content">
+            <div class="msg-header">
+              <span class="msg-name jobs">Steve Jobs</span>
+              <span class="msg-time">10:30:12</span>
+            </div>
+            <div class="msg-text jobs">
+              我认为 AI 不会完全取代程序员，但它会重新定义这个职业。就像图形界面没有消灭命令行，它只是让更多人能使用计算机。真正优秀的程序员会利用 AI 变得更强大，而那些只做重复性代码搬运的人确实会被淘汰。Stay hungry, stay foolish — 这句话在今天依然适用。
+            </div>
+          </div>
+        </div>
+
+        <!-- Message 2: Elon Musk -->
+        <div class="msg-bubble">
+          <div class="msg-avatar musk">🚀</div>
+          <div class="msg-content">
+            <div class="msg-header">
+              <span class="msg-name musk">Elon Musk</span>
+              <span class="msg-time">10:30:28</span>
+            </div>
+            <div class="msg-text musk">
+              我同意 Steve 的观点。AI 是一个放大器，不是替代品。在 Tesla，我们已经用 AI 辅助代码审查和生成测试用例，但核心架构决策仍然需要人类的直觉和创造力。不过我比大多数人更激进 — 我认为 5 年内 AI 可以写出 80% 的生产级代码。问题是：剩下的 20% 才是真正困难的部分。
+            </div>
+          </div>
+        </div>
+
+        <!-- Message 3: Naval Ravikant -->
+        <div class="msg-bubble">
+          <div class="msg-avatar naval">🧘</div>
+          <div class="msg-content">
+            <div class="msg-header">
+              <span class="msg-name naval">Naval Ravikant</span>
+              <span class="msg-time">10:30:45</span>
+            </div>
+            <div class="msg-text naval">
+              从哲学角度看，编程的本质是「用精确的语言描述问题」。如果 AI 能理解模糊的需求并转化为精确的实现，那么「程序员」这个角色会演变为「需求架构师」。代码会像曾经的汇编语言一样变成底层细节。但理解人类需求、定义什么值得被构建 — 这永远是人的工作。Leverage is the key — 学会用 AI 放大自己的判断力。
+            </div>
+          </div>
+        </div>
+
+        <!-- Typing indicator -->
+        <div class="typing-indicator">
+          <div class="msg-avatar jobs" style="opacity:0.5;">🍎</div>
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);">Steve 正在输入...</span>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===== Interactive JS (click toggles for personas) ===== -->
+<script>
+(function() {
+  const cards = document.querySelectorAll('.persona-card');
+  const tableAvatars = document.getElementById('tableAvatars');
+  const roundSlider = document.getElementById('roundSlider');
+  const roundValue = document.getElementById('roundValue');
+
+  // Slider value display
+  roundSlider.addEventListener('input', () => {
+    roundValue.textContent = roundSlider.value;
+  });
+
+  // Toggle persona cards
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      card.classList.toggle('checked');
+      updateTableAvatars();
+    });
+  });
+
+  function updateTableAvatars() {
+    const checkedCards = document.querySelectorAll('.persona-card.checked');
+    const avatarMap = {
+      jobs:    { emoji: '🍎', name: 'Steve Jobs',      cls: 'jobs' },
+      musk:    { emoji: '🚀', name: 'Elon Musk',       cls: 'musk' },
+      naval:   { emoji: '🧘', name: 'Naval Ravikant',   cls: 'naval' },
+      zhangym: { emoji: '🇨🇳', name: '张一鸣',          cls: 'zhangym' },
+      zhangxl: { emoji: '💬', name: '张小龙',          cls: 'zhangxl' }
+    };
+
+    let html = '';
+    const checkedPersonas = [];
+    checkedCards.forEach(card => {
+      const persona = card.dataset.persona;
+      if (persona && avatarMap[persona]) {
+        checkedPersonas.push(persona);
+      }
+    });
+
+    if (checkedPersonas.length === 0) {
+      html = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">请至少选择一位参与者</div>';
+    } else {
+      checkedPersonas.forEach((p, i) => {
+        const a = avatarMap[p];
+        html += `
+          <div class="table-avatar-wrap">
+            <div class="table-avatar ${a.cls}">${a.emoji}</div>
+            <span class="table-avatar-name${i === 1 ? ' active' : ''}">${a.name}</span>
+          </div>`;
+      });
+    }
+
+    tableAvatars.innerHTML = html;
+  }
+
+  // Start button — simulate a nice click effect
+  document.getElementById('btnStart').addEventListener('click', () => {
+    const btn = document.getElementById('btnStart');
+    const origText = btn.textContent;
+    btn.textContent = '⏳ 启动中...';
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.7';
+    setTimeout(() => {
+      btn.textContent = '✓ 已开始';
+      btn.style.opacity = '1';
+      setTimeout(() => {
+        btn.textContent = origText;
+        btn.style.pointerEvents = 'auto';
+      }, 1800);
+    }, 800);
+  });
+
+})();
+</script>
+
+</body>
+</html>

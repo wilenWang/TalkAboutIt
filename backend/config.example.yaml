@@ -1,0 +1,30 @@
+# TalkAboutIt 后端配置示例
+# 复制为 config.yaml 后按需修改，敏感信息建议通过环境变量注入
+
+server:
+  port: 8080
+  host: "0.0.0.0"
+
+llm:
+  default: deepseek
+  providers:
+    deepseek:
+      type: openai
+      base_url: https://api.deepseek.com/v1
+      api_key: ${DEEPSEEK_API_KEY}
+      model: deepseek-chat
+    openai:
+      type: openai
+      api_key: ${OPENAI_API_KEY}
+      model: gpt-4o
+    claude:
+      type: anthropic
+      api_key: ${ANTHROPIC_API_KEY}
+      model: claude-sonnet-4-20250514
+
+personas:
+  dir: personas
+
+session:
+  db_path: data/sessions.db
+  max_rounds: 3

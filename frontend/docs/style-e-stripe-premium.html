@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkAboutIt — Roundtable Discussion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #ffffff;
+    color: #64748d;
+  }
+
+  body {
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 1.6;
+    background: #ffffff;
+    min-height: 100vh;
+  }
+
+  /* ── Dark Brand Header ── */
+  .brand-header {
+    background: #1c1e54;
+    padding: 48px 32px 40px;
+    text-align: center;
+  }
+
+  .brand-header .logo {
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: -0.96px;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+
+  .brand-header .subtitle {
+    font-size: 20px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.65);
+    margin-top: 8px;
+    letter-spacing: -0.2px;
+  }
+
+  /* ── Container ── */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  /* ── Section Headings ── */
+  .section-label {
+    font-size: 14px;
+    font-weight: 400;
+    color: #273951;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .section-heading {
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: -0.64px;
+    color: #061b31;
+    margin-bottom: 24px;
+    line-height: 1.25;
+  }
+
+  /* ── Persona Selector ── */
+  .persona-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .persona-card {
+    flex: 1 1 0;
+    min-width: 140px;
+    background: #ffffff;
+    border: 1px solid #e5edf5;
+    border-radius: 6px;
+    padding: 20px 16px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow:
+      rgba(50,50,93,0.25) 0px 6px 12px -8px,
+      rgba(0,0,0,0.1) 0px 3px 7px -3px;
+    user-select: none;
+  }
+
+  .persona-card:hover {
+    border-color: #b9b9f9;
+    box-shadow:
+      rgba(50,50,93,0.25) 0px 30px 45px -30px,
+      rgba(0,0,0,0.1) 0px 18px 36px -18px;
+  }
+
+  .persona-card.selected {
+    border: 2px solid #533afd;
+    box-shadow:
+      rgba(83,58,253,0.15) 0px 30px 45px -30px,
+      rgba(50,50,93,0.25) 0px 18px 36px -18px;
+  }
+
+  .persona-card .emoji {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .persona-card .name {
+    font-size: 16px;
+    font-weight: 400;
+    color: #061b31;
+    letter-spacing: -0.2px;
+  }
+
+  .persona-card .role {
+    font-size: 13px;
+    font-weight: 300;
+    color: #64748d;
+    margin-top: 2px;
+  }
+
+  .persona-card .check-badge {
+    display: none;
+    margin-top: 10px;
+    font-size: 11px;
+    font-weight: 400;
+    color: #108c3d;
+    background: rgba(21,190,83,0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+
+  .persona-card.selected .check-badge {
+    display: inline-block;
+  }
+
+  /* ── Form Row ── */
+  .form-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group.topic { flex: 2 1 300px; }
+  .form-group.rounds { flex: 1 1 160px; }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 400;
+    color: #273951;
+    letter-spacing: 0.2px;
+  }
+
+  .form-input,
+  .form-select {
+    font-family: 'Source Sans 3', sans-serif;
+    font-feature-settings: "ss01";
+    font-size: 16px;
+    font-weight: 300;
+    color: #061b31;
+    background: #ffffff;
+    border: 1px solid #e5edf5;
+    border-radius: 4px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    border-color: #533afd;
+    box-shadow: rgba(83,58,253,0.15) 0px 0px 0px 3px;
+  }
+
+  .form-input::placeholder {
+    color: #94a3b8;
+    font-weight: 300;
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+
+  /* ── CTA Button ── */
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-feature-settings: "ss01";
+    font-size: 16px;
+    font-weight: 400;
+    color: #ffffff;
+    background: #533afd;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    box-shadow: rgba(50,50,93,0.25) 0px 6px 12px -8px, rgba(0,0,0,0.1) 0px 3px 7px -3px;
+    white-space: nowrap;
+    height: 44px;
+  }
+
+  .btn-cta:hover {
+    background: #4434d4;
+    box-shadow:
+      rgba(50,50,93,0.25) 0px 13px 27px -15px,
+      rgba(0,0,0,0.1) 0px 8px 16px -8px;
+    transform: translateY(-1px);
+  }
+
+  .btn-cta:active {
+    background: #3b2bc4;
+    transform: translateY(0);
+    box-shadow: rgba(50,50,93,0.25) 0px 2px 5px -3px;
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-feature-settings: "ss01";
+    font-size: 16px;
+    font-weight: 400;
+    color: #533afd;
+    background: transparent;
+    border: 1px solid #b9b9f9;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .btn-ghost:hover {
+    background: rgba(83,58,253,0.04);
+    border-color: #533afd;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid #e5edf5;
+    margin: 40px 0;
+  }
+
+  /* ── Discussion Area ── */
+  .discussion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .message-card {
+    background: #ffffff;
+    border: 1px solid #e5edf5;
+    border-radius: 6px;
+    padding: 16px 20px;
+    box-shadow:
+      rgba(50,50,93,0.25) 0px 6px 12px -8px,
+      rgba(0,0,0,0.1) 0px 3px 7px -3px;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .message-card:hover {
+    box-shadow:
+      rgba(50,50,93,0.25) 0px 30px 45px -30px,
+      rgba(0,0,0,0.1) 0px 18px 36px -18px;
+  }
+
+  .message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .message-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: #1c1e54;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 400;
+    flex-shrink: 0;
+  }
+
+  .message-author {
+    font-size: 15px;
+    font-weight: 400;
+    color: #061b31;
+  }
+
+  .message-round {
+    font-size: 12px;
+    font-weight: 300;
+    color: #94a3b8;
+    margin-left: auto;
+  }
+
+  .message-body {
+    font-size: 16px;
+    font-weight: 300;
+    color: #64748d;
+    line-height: 1.6;
+    padding-left: 36px;
+  }
+
+  /* ── Empty State ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+  }
+
+  .empty-state .icon-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(83,58,253,0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 24px;
+  }
+
+  .empty-state .empty-heading {
+    font-size: 20px;
+    font-weight: 300;
+    color: #061b31;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+  }
+
+  .empty-state .empty-body {
+    font-size: 16px;
+    font-weight: 300;
+    color: #64748d;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* ── Ambient Card (used for grouping) ── */
+  .ambient-card {
+    background: #ffffff;
+    border: 1px solid #e5edf5;
+    border-radius: 6px;
+    padding: 32px;
+    box-shadow: rgba(23,23,23,0.08) 0px 15px 35px 0px;
+  }
+
+  /* ── Demo Discussion (pre-filled messages for visual richness) ── */
+  .demo-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── Typing Indicator ── */
+  .typing-indicator {
+    display: flex;
+    gap: 6px;
+    padding: 16px 20px;
+  }
+
+  .typing-indicator span {
+    width: 6px;
+    height: 6px;
+    background: #b9b9f9;
+    border-radius: 50%;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+  }
+
+  .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* ── Footer ── */
+  .page-footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 13px;
+    font-weight: 300;
+    color: #94a3b8;
+    border-top: 1px solid #e5edf5;
+    margin-top: 48px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .brand-header { padding: 32px 20px 28px; }
+    .brand-header .logo { font-size: 36px; letter-spacing: -0.72px; }
+    .container { padding: 32px 20px; }
+    .section-heading { font-size: 26px; letter-spacing: -0.52px; }
+    .persona-card { min-width: 120px; padding: 14px 10px 12px; }
+    .form-row { flex-direction: column; }
+    .btn-cta { width: 100%; }
+    .ambient-card { padding: 20px; }
+  }
+
+  /* ── JavaScript active states ── */
+  [data-js-disabled] .persona-card.selected { pointer-events: none; }
+</style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  DARK BRAND HEADER                         -->
+  <!-- ═══════════════════════════════════════════ -->
+  <header class="brand-header">
+    <h1 class="logo">TalkAboutIt</h1>
+    <p class="subtitle">Roundtable Discussion</p>
+  </header>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  MAIN CONTENT                              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main class="container">
+
+    <!-- ── Persona Selection ── -->
+    <section>
+      <p class="section-label">Step 1</p>
+      <h2 class="section-heading">Choose your executive panel</h2>
+
+      <div class="persona-grid" id="personaGrid">
+        <!-- Steve Jobs -->
+        <div class="persona-card selected" data-persona="jobs" onclick="selectPersona(this)">
+          <div class="emoji">🍎</div>
+          <div class="name">Steve Jobs</div>
+          <div class="role">Visionary · Apple</div>
+          <span class="check-badge">Selected</span>
+        </div>
+
+        <!-- Elon Musk -->
+        <div class="persona-card" data-persona="musk" onclick="selectPersona(this)">
+          <div class="emoji">🚀</div>
+          <div class="name">Elon Musk</div>
+          <div class="role">Innovator · SpaceX</div>
+          <span class="check-badge">Selected</span>
+        </div>
+
+        <!-- Naval Ravikant -->
+        <div class="persona-card" data-persona="naval" onclick="selectPersona(this)">
+          <div class="emoji">🧘</div>
+          <div class="name">Naval Ravikant</div>
+          <div class="role">Philosopher · AngelList</div>
+          <span class="check-badge">Selected</span>
+        </div>
+
+        <!-- 张一鸣 -->
+        <div class="persona-card" data-persona="zhangym" onclick="selectPersona(this)">
+          <div class="emoji">🎯</div>
+          <div class="name">张一鸣</div>
+          <div class="role">Founder · ByteDance</div>
+          <span class="check-badge">Selected</span>
+        </div>
+
+        <!-- 张小龙 -->
+        <div class="persona-card" data-persona="zhangxl" onclick="selectPersona(this)">
+          <div class="emoji">💬</div>
+          <div class="name">张小龙</div>
+          <div class="role">Creator · WeChat</div>
+          <span class="check-badge">Selected</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Topic & Rounds ── -->
+    <section class="ambient-card" style="margin-top: 32px;">
+      <p class="section-label">Step 2</p>
+      <h2 class="section-heading" style="margin-bottom: 20px;">Set the topic</h2>
+
+      <div class="form-row" style="margin-top: 0;">
+        <div class="form-group topic">
+          <label class="form-label" for="topicInput">Discussion topic</label>
+          <input
+            type="text"
+            id="topicInput"
+            class="form-input"
+            placeholder="e.g. The future of AI-native products"
+            value="The future of AI-native products"
+          >
+        </div>
+
+        <div class="form-group rounds">
+          <label class="form-label" for="roundSelect">Rounds</label>
+          <select id="roundSelect" class="form-select">
+            <option value="1">1 round</option>
+            <option value="2">2 rounds</option>
+            <option value="3" selected>3 rounds</option>
+            <option value="4">4 rounds</option>
+            <option value="5">5 rounds</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="justify-content: flex-end;">
+          <button class="btn-cta" id="startBtn" onclick="startDiscussion()">
+            <span>⚡</span> Start Discussion
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Discussion Area ── -->
+    <section style="margin-top: 40px;" id="discussionSection">
+      <p class="section-label">Discussion</p>
+      <h2 class="section-heading">Roundtable in progress</h2>
+
+      <div class="discussion-list" id="discussionList">
+        <!-- Steve Jobs -->
+        <div class="message-card">
+          <div class="message-header">
+            <div class="message-avatar">SJ</div>
+            <span class="message-author">Steve Jobs</span>
+            <span class="message-round">Round 1</span>
+          </div>
+          <p class="message-body">
+            It's not about the technology — it's about the experience. AI-native products need to feel like magic. 
+            The user should never have to think about the model behind the interface. It should just work, beautifully.
+          </p>
+        </div>
+
+        <!-- Elon Musk -->
+        <div class="message-card">
+          <div class="message-header">
+            <div class="message-avatar">EM</div>
+            <span class="message-author">Elon Musk</span>
+            <span class="message-round">Round 1</span>
+          </div>
+          <p class="message-body">
+            The physics of AI scaling is what matters most. We need to think in orders of magnitude. 
+            Compute, data, and algorithmic efficiency will determine the ceiling — not UI polish.
+          </p>
+        </div>
+
+        <!-- Naval Ravikant -->
+        <div class="message-card">
+          <div class="message-header">
+            <div class="message-avatar">NR</div>
+            <span class="message-author">Naval Ravikant</span>
+            <span class="message-round">Round 1</span>
+          </div>
+          <p class="message-body">
+            AI gives us leverage like never before. But the real question is: what does the world look like 
+            when intelligence becomes abundant? Permissionless innovation powered by open models will reshape society.
+          </p>
+        </div>
+
+        <!-- 张一鸣 -->
+        <div class="message-card">
+          <div class="message-header">
+            <div class="message-avatar">YM</div>
+            <span class="message-author">张一鸣</span>
+            <span class="message-round">Round 2</span>
+          </div>
+          <p class="message-body">
+            AI-native products are fundamentally about information distribution efficiency. 
+            The recommendation is the product. Understanding user intent at a granular level will define the next decade of consumer software.
+          </p>
+        </div>
+
+        <!-- 张小龙 -->
+        <div class="message-card">
+          <div class="message-header">
+            <div class="message-avatar">XL</div>
+            <span class="message-author">张小龙</span>
+            <span class="message-round">Round 2</span>
+          </div>
+          <p class="message-body">
+            The best products are those that connect people. AI should be like a good tool — 
+            you don't feel its existence, but it serves its purpose perfectly. Simplicity over complexity, always.
+          </p>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="message-card typing-indicator" id="typingIndicator" style="display: flex; justify-content: center; margin-top: 12px;">
+        <span></span><span></span><span></span>
+      </div>
+    </section>
+
+    <!-- ── Ghost action row ── -->
+    <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+      <button class="btn-ghost" onclick="resetDiscussion()">↻ New Discussion</button>
+      <button class="btn-ghost">↓ Export transcript</button>
+    </div>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  FOOTER                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <footer class="page-footer">
+    TalkAboutIt · Roundtable Discussion · Stripe-inspired design language
+  </footer>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  JAVASCRIPT (interactivity)                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <script>
+    // ── Persona selection ──
+    function selectPersona(card) {
+      document.querySelectorAll('.persona-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    }
+
+    // ── Start discussion handler ──
+    function startDiscussion() {
+      const topic = document.getElementById('topicInput').value || 'Untitled discussion';
+      const rounds = document.getElementById('roundSelect').value;
+      const selectedPersona = document.querySelector('.persona-card.selected');
+      const personaName = selectedPersona ? selectedPersona.querySelector('.name').textContent : 'Unknown';
+
+      // Scroll to discussion area
+      const section = document.getElementById('discussionSection');
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Flash the button
+      const btn = document.getElementById('startBtn');
+      btn.style.transition = 'none';
+      btn.style.background = '#15be53';
+      btn.querySelector('span').textContent = '✓';
+      btn.textContent = btn.textContent.replace('Start Discussion', 'Discussion started');
+      setTimeout(() => {
+        btn.style.transition = 'background 0.3s ease';
+        btn.style.background = '#533afd';
+        btn.querySelector('span').textContent = '⚡';
+        btn.textContent = btn.textContent.replace('Discussion started', 'Start Discussion');
+      }, 1200);
+
+      // Show loading in typing indicator
+      const indicator = document.getElementById('typingIndicator');
+      indicator.style.display = 'flex';
+      setTimeout(() => {
+        indicator.style.display = 'none';
+      }, 2000);
+    }
+
+    // ── Reset discussion ──
+    function resetDiscussion() {
+      document.getElementById('topicInput').value = '';
+      document.getElementById('roundSelect').value = '3';
+      document.getElementById('discussionList').innerHTML = '';
+      document.getElementById('typingIndicator').style.display = 'none';
+
+      // Show empty state
+      const list = document.getElementById('discussionList');
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'empty-state';
+      emptyDiv.innerHTML = `
+        <div class="icon-circle">💬</div>
+        <p class="empty-heading">Ready to begin</p>
+        <p class="empty-body">Select your executive panel, set a topic, and start the roundtable discussion.</p>
+      `;
+      list.appendChild(emptyDiv);
+    }
+  </script>
+
+</body>
+</html>

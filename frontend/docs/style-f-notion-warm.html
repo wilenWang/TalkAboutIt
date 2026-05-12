@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkAboutIt — Notion Warm</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-warm: #f6f5f4;
+    --text: rgba(0,0,0,0.95);
+    --text-secondary: #615d59;
+    --text-muted: #a39e98;
+    --blue: #0075de;
+    --blue-bg: #f2f9ff;
+    --blue-text: #097fe8;
+    --border: 1px solid rgba(0,0,0,0.1);
+    --border-whisper: 1px solid rgba(0,0,0,0.06);
+    --radius: 4px;
+    --radius-card: 8px;
+    --radius-lg: 12px;
+    --shadow-card: rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2.025px 7.85px, rgba(0,0,0,0.02) 0px 0.8px 2.93px, rgba(0,0,0,0.01) 0px 0.175px 1.04px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ========== HEADER ========== */
+  .header {
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: var(--border-whisper);
+  }
+  .header-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-sub { font-size: 13px; color: var(--text-muted); }
+  .header-spacer { flex:1; }
+  .btn-ghost {
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-ghost:hover { background: rgba(0,0,0,0.04); }
+
+  /* ========== LAYOUT ========== */
+  .app {
+    display: flex;
+    height: calc(100vh - 49px);
+  }
+
+  /* ========== LEFT TAB BAR ========== */
+  .tab-bar {
+    width: 56px;
+    background: var(--bg-warm);
+    border-right: var(--border-whisper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 4px;
+  }
+  .tab-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    font-size: 18px;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    position: relative;
+  }
+  .tab-btn:hover { background: rgba(0,0,0,0.05); }
+  .tab-btn.active {
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: var(--shadow-card);
+  }
+  .tab-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--blue);
+    border-radius: 0 3px 3px 0;
+  }
+  .tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  /* ========== SIDEBAR ========== */
+  .sidebar {
+    width: 260px;
+    background: var(--bg-warm);
+    border-right: var(--border-whisper);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 16px 16px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px 8px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .sidebar-item:hover { background: rgba(0,0,0,0.04); }
+  .sidebar-item.selected {
+    background: var(--bg);
+    box-shadow: var(--shadow-card);
+    border-left: 3px solid var(--blue);
+    padding-left: 7px;
+  }
+  .sidebar-item .avatar { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .sidebar-item .name { flex:1; }
+  .sidebar-item .check {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: transparent;
+    transition: all 0.15s;
+  }
+  .sidebar-item.selected .check {
+    background: var(--blue); border-color: var(--blue); color: #fff;
+  }
+  .sidebar-footer {
+    padding: 8px;
+    border-top: var(--border-whisper);
+  }
+  .badge-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    text-align: center;
+  }
+
+  /* ========== MAIN ========== */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 48px;
+    max-width: 900px;
+  }
+  .main h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.25px;
+    margin-bottom: 4px;
+  }
+  .main .section-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+
+  /* ========== TALK CONTROLS ========== */
+  .controls-card {
+    background: var(--bg);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-card);
+  }
+  .controls-card .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .controls-card .row:last-child { margin-bottom: 0; }
+  .input-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .input-wrap label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .input-wrap input, .input-wrap select {
+    padding: 8px 10px;
+    border: var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border 0.15s;
+  }
+  .input-wrap input:focus, .input-wrap select:focus {
+    border-color: var(--blue);
+  }
+  .btn-primary {
+    padding: 8px 20px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: #0066cc; }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-outline {
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--text);
+    border: var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-outline:hover { background: rgba(0,0,0,0.04); }
+
+  /* ========== PILLS ========== */
+  .pill-group { display: flex; gap: 4px; }
+  .pill {
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
+    cursor: pointer;
+    border: var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.12s;
+  }
+  .pill:hover { background: rgba(0,0,0,0.04); }
+  .pill.active {
+    background: var(--blue-bg);
+    color: var(--blue-text);
+    border-color: rgba(9,126,232,0.2);
+  }
+  .pill-info {
+    background: var(--blue-bg);
+    color: var(--blue-text);
+    border: none;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
+  }
+
+  /* ========== DISCUSSION ========== */
+  .discussion-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .msg-card {
+    background: var(--bg);
+    border: var(--border-whisper);
+    border-radius: var(--radius-card);
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    box-shadow: rgba(0,0,0,0.02) 0px 1px 3px;
+  }
+  .msg-card:nth-child(even) { background: var(--bg-warm); }
+  .msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .msg-avatar { font-size: 18px; line-height: 1; }
+  .msg-author { font-size: 13px; font-weight: 600; }
+  .msg-meta { font-size: 11px; color: var(--text-muted); }
+  .msg-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .typing-dots { display: flex; gap: 3px; }
+  .typing-dots span {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: bounce 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* ========== ROLE TAB ========== */
+  .role-layout {
+    display: flex;
+    gap: 0;
+    height: 100%;
+  }
+  .role-list-panel {
+    width: 240px;
+    background: var(--bg-warm);
+    border-right: var(--border-whisper);
+    display: flex;
+    flex-direction: column;
+  }
+  .role-list-panel .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .role-detail {
+    flex: 1;
+    padding: 24px 32px;
+    overflow-y: auto;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 8px 10px;
+    border: var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+  }
+  .form-group textarea { min-height: 80px; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: var(--blue);
+  }
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+  .form-row .form-group { flex: 1; }
+  .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: var(--border-whisper);
+  }
+  .btn-danger {
+    padding: 8px 16px;
+    background: transparent;
+    color: #d14343;
+    border: 1px solid rgba(209,67,67,0.2);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  .btn-danger:hover { background: rgba(209,67,67,0.04); }
+
+  /* ========== EMPTY STATE ========== */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 900px) {
+    .app { flex-direction: column; }
+    .tab-bar { flex-direction: row; width: 100%; height: auto; padding: 4px 8px; }
+    .sidebar { width: 100%; max-height: 200px; }
+    .main { padding: 16px 20px; }
+    .role-layout { flex-direction: column; }
+    .role-list-panel { width: 100%; max-height: 150px; }
+  }
+
+  /* Utility */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-logo">✦ TalkAboutIt</span>
+  <span class="header-sub">Roundtable Discussion</span>
+  <span class="header-spacer"></span>
+  <span style="font-size:12px;color:var(--text-muted);">Style F · Notion Warm</span>
+</div>
+
+<div class="app">
+
+  <!-- ========== TAB BAR ========== -->
+  <nav class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-tab="talk" onclick="switchTab('talk')">
+      💬
+      <span class="tab-label">Talk</span>
+    </button>
+    <button class="tab-btn" data-tab="role" onclick="switchTab('role')">
+      👤
+      <span class="tab-label">Role</span>
+    </button>
+  </nav>
+
+  <!-- ========== TALK TAB ========== -->
+  <div id="tab-talk">
+
+    <!-- Persona Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">选择参与者</div>
+      <div class="sidebar-list" id="personaList"></div>
+      <div class="sidebar-footer">
+        <div class="badge-count" id="selectedCount">已选 0 / 5 人</div>
+      </div>
+    </aside>
+
+    <!-- Main Talk Area -->
+    <main class="main">
+      <h2>Roundtable Discussion</h2>
+      <p class="section-desc">选择参与者，设定话题，观察 AI 人格之间的对话。</p>
+
+      <div class="controls-card">
+        <div class="row">
+          <div class="input-wrap">
+            <label>讨论话题</label>
+            <input type="text" id="topicInput" placeholder="输入讨论话题..." value="AI 会取代程序员吗？">
+          </div>
+          <div class="input-wrap" style="max-width:120px">
+            <label>轮次</label>
+            <select id="roundSelect">
+              <option>1</option><option>2</option><option selected>3</option>
+              <option>4</option><option>5</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn-primary" onclick="startDiscussion()">✦ 开始讨论</button>
+        </div>
+      </div>
+
+      <div id="discussionArea">
+        <div class="discussion-header">
+          <h2 style="margin-bottom:0">Discussion</h2>
+          <span class="pill-info" id="msgCount" style="display:none"></span>
+        </div>
+        <div id="messageList"></div>
+        <div id="typingArea"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ========== ROLE TAB ========== -->
+  <div id="tab-role" class="hidden">
+    <div class="role-layout" style="flex:1;overflow:hidden">
+      <div class="role-list-panel">
+        <div class="sidebar-header" style="justify-content:space-between">
+          <span>角色列表</span>
+          <button class="btn-ghost" style="font-size:18px;padding:0 4px" title="添加角色">+</button>
+        </div>
+        <div class="sidebar-list" id="roleList"></div>
+      </div>
+      <div class="role-detail" id="roleDetail">
+        <div class="empty-state">
+          <div class="icon">👤</div>
+          <h3>选择一个角色</h3>
+          <p>从左侧列表选择角色以查看和编辑详情</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ========== DATA ==========
+const personas = [
+  { id:'steve-jobs', name:'Steve Jobs', avatar:'🍎', desc:'Apple 联合创始人', personality:'极致完美主义者，现实扭曲力场，推崇简约设计，相信直觉超过市场调研。说话直接、尖锐。', model:'claude', scenario:'你正在参加圆桌讨论，和其他企业家一起探讨话题。', first_mes:'Stay hungry, stay foolish. The people who are crazy enough to think they can change the world are the ones who do.' },
+  { id:'elon-musk', name:'Elon Musk', avatar:'🚀', desc:'Tesla & SpaceX CEO', personality:'第一性原理思考者，极度乐观的技术主义者。相信物理学约束之上的任何事都可能实现。说话大胆、有时夸张，但逻辑自洽。', model:'openai', scenario:'你正在参加圆桌讨论，和其他企业家一起探讨话题。', first_mes:'The future is going to be amazing. We need to make sure we get there in one piece.' },
+  { id:'naval-ravikant', name:'Naval Ravikant', avatar:'🧘', desc:'AngelList 创始人', personality:'哲学家型投资人，推崇复利思维、长期主义、具体知识。说话简洁有力，常用推文式短句。善于用第一性原理剖析问题。', model:'claude', scenario:'你正在参加圆桌讨论，和其他企业家一起探讨话题。', first_mes:'Seek wealth, not money or status. Wealth is having assets that earn while you sleep.' },
+  { id:'zhang-yiming', name:'张一鸣', avatar:'🇨🇳', desc:'字节跳动 创始人', personality:'极度理性，推崇延迟满足感。相信算法和数据驱动的决策。善于从信息效率和认知角度思考问题。说话温和但观点坚定。', model:'deepseek', scenario:'你正在参加圆桌讨论，和其他企业家一起探讨话题。', first_mes:'认知能力是一个人的核心竞争力。保持学习，延迟满足。' },
+  { id:'zhang-xiaolong', name:'张小龙', avatar:'💬', desc:'微信 创始人', personality:'极致产品主义者，推崇"用完即走"。相信好产品是克制的结果。说话慢条斯理但句句到点，常从人性角度剖析产品设计。', model:'deepseek', scenario:'你正在参加圆桌讨论，和其他企业家一起探讨话题。', first_mes:'好的产品是用完即走的。用户的时间很宝贵，不要让用户在产品里浪费时间。' },
+];
+
+// ========== DEMO MESSAGES ==========
+const demoMessages = [
+  { persona:'Steve Jobs', avatar:'🍎', round:1, content:'I\'ve been thinking about this a lot. When we built the Mac, we weren\'t trying to replace graphic designers — we were trying to give them superpowers. AI is the same. It\'s a bicycle for the mind, as I\'ve always said. The programmers who learn to ride this bicycle will create things that the rest can\'t even imagine.' },
+  { persona:'Elon Musk', avatar:'🚀', round:1, content:'I disagree with the premise. AI will absolutely replace most programmers — but not in the way people think. The question is timeline. We\'re looking at 3-5 years for AI to be better than most human coders at routine tasks. But the truly creative, architectural thinking? That\'s harder. The key is to be the person who asks the right questions, not the person who types the code.' },
+  { persona:'Naval Ravikant', avatar:'🧘', round:1, content:'You\'re both right in different ways. AI is leverage — the ultimate form of permissionless leverage. The coder who wields AI becomes 10x, the one who doesn\'t becomes obsolete. But here\'s the nuance: the bottleneck shifts from "can I code this?" to "what should I build?" Judgment becomes the scarce resource, not technical skill.' },
+  { persona:'张一鸣', avatar:'🇨🇳', round:2, content:'我同意 Naval 的观点。问题的本质是信息效率。AI 降低了信息处理的门槛，那么核心竞争力就从"我能处理多少信息"变成了"我的认知框架有多好"。这跟字节一直强调的"认知能力"是一个道理——工具在变，但判断力和认知深度是持久的。' },
+  { persona:'张小龙', avatar:'💬', round:2, content:'我觉得大家忽视了一个点：用户真正需要什么。AI 能写代码了，但用户的需求表达本身就是最难的事。就像微信，我们的工作不是堆积功能，而是理解人性。AI 时代的程序员，最核心的能力可能是"翻译"——把模糊的人类需求翻译成 AI 能执行的指令。这是一种同理心，不是技术。' },
+];
+
+let selectedPersonas = ['Steve Jobs', 'Elon Musk', 'Naval Ravikant'];
+let currentTab = 'talk';
+
+// ========== INIT ==========
+function init() {
+  renderPersonaList();
+  renderRoleList();
+  updateSelectedCount();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById('tab-talk').classList.toggle('hidden', tab !== 'talk');
+  document.getElementById('tab-role').classList.toggle('hidden', tab !== 'role');
+  if (tab === 'talk') {
+    document.getElementById('tab-talk').style.display = 'flex';
+    document.getElementById('tab-role').style.display = 'none';
+  } else {
+    document.getElementById('tab-talk').style.display = 'none';
+    document.getElementById('tab-role').style.display = 'block';
+  }
+}
+// Fix initial display
+document.getElementById('tab-talk').style.display = 'flex';
+
+function renderPersonaList() {
+  const list = document.getElementById('personaList');
+  list.innerHTML = personas.map(p => `
+    <div class="sidebar-item ${selectedPersonas.includes(p.name) ? 'selected' : ''}"
+         onclick="togglePersona('${p.name}')">
+      <span class="avatar">${p.avatar}</span>
+      <span class="name">${p.name}</span>
+      <span class="check">✓</span>
+    </div>
+  `).join('');
+}
+
+function renderRoleList() {
+  const list = document.getElementById('roleList');
+  list.innerHTML = personas.map(p => `
+    <div class="sidebar-item" onclick="selectRole('${p.id}')">
+      <span class="avatar">${p.avatar}</span>
+      <span class="name">${p.name}</span>
+    </div>
+  `).join('');
+}
+
+function togglePersona(name) {
+  if (selectedPersonas.includes(name)) {
+    selectedPersonas = selectedPersonas.filter(n => n !== name);
+  } else {
+    if (selectedPersonas.length >= 5) return;
+    selectedPersonas.push(name);
+  }
+  renderPersonaList();
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  document.getElementById('selectedCount').textContent = `已选 ${selectedPersonas.length} / 5 人`;
+}
+
+function selectRole(id) {
+  const p = personas.find(x => x.id === id);
+  if (!p) return;
+  const detail = document.getElementById('roleDetail');
+  detail.innerHTML = `
+    <h2>${p.avatar} ${p.name}</h2>
+    <p class="section-desc">${p.desc}</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>显示名称</label>
+        <input type="text" value="${p.name}">
+      </div>
+      <div class="form-group" style="max-width:80px">
+        <label>头像</label>
+        <input type="text" value="${p.avatar}" style="text-align:center;font-size:20px">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>身份描述</label>
+      <input type="text" value="${p.desc}">
+    </div>
+    <div class="form-group">
+      <label>性格与思维模式</label>
+      <textarea rows="3">${p.personality}</textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>场景描述</label>
+        <input type="text" value="${p.scenario}">
+      </div>
+      <div class="form-group" style="max-width:150px">
+        <label>绑定模型</label>
+        <select>
+          <option ${p.model==='claude'?'selected':''}>Claude</option>
+          <option ${p.model==='openai'?'selected':''}>OpenAI</option>
+          <option ${p.model==='deepseek'?'selected':''}>DeepSeek</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>对话示例 (mes_example)</label>
+      <textarea rows="4" placeholder="用户: ...&#10;${p.name}: ...">用户: 你觉得做产品应该听用户的吗？&#10;${p.name}: ${p.first_mes}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary">保存</button>
+      <button class="btn-outline">测试对话</button>
+      <button class="btn-danger">删除角色</button>
+    </div>
+  `;
+}
+
+// ========== DISCUSSION SIMULATION ==========
+let discussionRunning = false;
+let msgIdx = 0;
+
+function startDiscussion() {
+  if (selectedPersonas.length < 2) {
+    alert('请至少选择 2 位参与者');
+    return;
+  }
+  discussionRunning = true;
+  msgIdx = 0;
+  document.getElementById('messageList').innerHTML = '';
+  document.getElementById('msgCount').style.display = 'inline-block';
+  document.getElementById('msgCount').textContent = '进行中';
+  showNextMessage();
+}
+
+function showNextMessage() {
+  if (msgIdx >= demoMessages.length) {
+    finishDiscussion();
+    return;
+  }
+  const msg = demoMessages[msgIdx];
+  const selected = personas.filter(p => selectedPersonas.includes(p.name));
+  const avatar = selected.find(p => p.name === msg.persona)?.avatar || '🤖';
+
+  // Typing indicator
+  const typing = document.getElementById('typingArea');
+  typing.innerHTML = `
+    <div class="typing-indicator">
+      <span class="msg-avatar">${avatar}</span>
+      <span style="font-weight:600;font-size:13px">${msg.persona}</span>
+      <span style="font-size:13px;color:var(--text-muted)">正在输入...</span>
+      <span class="typing-dots"><span></span><span></span><span></span></span>
+    </div>
+  `;
+  typing.scrollIntoView({ behavior: 'smooth' });
+
+  setTimeout(() => {
+    const list = document.getElementById('messageList');
+    list.insertAdjacentHTML('beforeend', `
+      <div class="msg-card" style="animation:fadeInUp 0.3s ease">
+        <div class="msg-header">
+          <span class="msg-avatar">${avatar}</span>
+          <span class="msg-author">${msg.persona}</span>
+          <span class="msg-meta">Round ${msg.round}</span>
+        </div>
+        <div class="msg-content">${msg.content}</div>
+      </div>
+    `);
+    typing.innerHTML = '';
+    document.getElementById('msgCount').textContent = `${msgIdx + 1} 条消息`;
+    msgIdx++;
+    setTimeout(showNextMessage, 1200);
+  }, 1800);
+}
+
+function finishDiscussion() {
+  discussionRunning = false;
+  document.getElementById('msgCount').textContent = '已完成';
+  const typing = document.getElementById('typingArea');
+  typing.innerHTML = `
+    <div style="text-align:center;padding:24px;color:var(--text-muted)">
+      <span style="font-size:32px">✦</span>
+      <p style="margin-top:8px;font-size:14px">讨论结束 — 共 ${demoMessages.length} 条消息</p>
+    </div>
+  `;
+}
+
+// CSS animation
+const style = document.createElement('style');
+style.textContent = `@keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }`;
+document.head.appendChild(style);
+
+// Init
+init();
+</script>
+</body>
+</html>

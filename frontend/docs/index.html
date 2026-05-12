@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkAboutIt — 前端风格预览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "PingFang SC", sans-serif;
+    background: #f5f5f7;
+    color: #1d1d1f;
+    padding: 24px 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    color: #86868b;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 32px;
+  }
+  .badge.real { background: #e8f5e9; color: #2e7d32; }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #e8e8ed;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .card:active { transform: scale(0.99); }
+  .preview {
+    width: 120px;
+    height: 80px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .preview.linear {
+    background: linear-gradient(135deg, #08090a 40%, #1a1a2e 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #f7f8f8;
+  }
+  .preview.stripe {
+    background: linear-gradient(135deg, #ffffff 30%, #e5edf5 100%);
+    border: 1px solid #e5edf5;
+    color: #533afd;
+  }
+  .preview.notion {
+    background: linear-gradient(135deg, #ffffff 40%, #f6f5f4 100%);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: #0075de;
+  }
+  .info { flex: 1; }
+  .info h2 { font-size: 20px; margin-bottom: 4px; }
+  .info .source { font-size: 13px; color: #86868b; margin-bottom: 8px; }
+  .info .source span { font-weight: 600; color: #1d1d1f; }
+  .info p { font-size: 14px; color: #86868b; line-height: 1.5; }
+  .tags { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .tag.linear { background: #1a1a2e; color: #828fff; border: 1px solid rgba(130,143,255,0.2); }
+  .tag.stripe { background: #f3f0ff; color: #533afd; border: 1px solid #b9b9f9; }
+  .tag.notion { background: #f2f9ff; color: #097fe8; border: 1px solid rgba(9,126,232,0.15); }
+  .divider {
+    text-align: center;
+    color: #86868b;
+    font-size: 12px;
+    padding: 16px 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .footer {
+    text-align: center;
+    color: #86868b;
+    font-size: 13px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e8e8ed;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎨 TalkAboutIt 风格预览</h1>
+<p class="subtitle">基于真实产品设计系统 — 每套都有观点、有性格</p>
+<span class="badge real">✅ 真实设计系统</span>
+
+<a class="card" href="style-d-linear-dark.html">
+  <div class="preview linear">Linear</div>
+  <div class="info">
+    <h2>Style D — Linear Dark</h2>
+    <div class="source">设计系统: <span>Linear.app</span></div>
+    <p>暗黑画布上的精密工程。半透明边框、亮度抬升代替阴影、负字间距、Inter 字体 510 字重。像为开发者设计的圆桌终端。</p>
+    <div class="tags">
+      <span class="tag linear">#08090a 画布</span>
+      <span class="tag linear">510 签名字重</span>
+      <span class="tag linear">半透明白边框</span>
+    </div>
+  </div>
+</a>
+
+<a class="card" href="style-e-stripe-premium.html">
+  <div class="preview stripe">Stripe</div>
+  <div class="info">
+    <h2>Style E — Stripe Premium</h2>
+    <div class="source">设计系统: <span>Stripe.com</span></div>
+    <p>金融级精密美学。深海军蓝标题、300 轻盈字重、蓝色调多层阴影。像顶级董事会的圆桌会议室。</p>
+    <div class="tags">
+      <span class="tag stripe">300 轻盈标题</span>
+      <span class="tag stripe">蓝色调阴影</span>
+      <span class="tag stripe">#533afd 紫</span>
+    </div>
+  </div>
+</a>
+
+<a class="card" href="style-f-notion-warm.html">
+  <div class="preview notion">Notion</div>
+  <div class="info">
+    <h2>Style F — Notion Warm</h2>
+    <div class="source">设计系统: <span>Notion.so</span></div>
+    <p>温暖的空白画布。奶油白交替背景、轻语级边框、多层微阴影、仅一处蓝色。像思想沙龙的笔记本。</p>
+    <div class="tags">
+      <span class="tag notion">暖白 #f6f5f4</span>
+      <span class="tag notion">轻语边框</span>
+      <span class="tag notion">#0075de 单色点缀</span>
+    </div>
+  </div>
+</a>
+
+<div class="divider">✦ 旧版 AI 风格（存档） ✦</div>
+
+<a class="card" href="style-a-dark-modern.html" style="opacity: 0.6;">
+  <div class="preview" style="background:linear-gradient(135deg,#0a0a0f,#1a1a2e)">A</div>
+  <div class="info">
+    <h2>Style A — Dark Modern (旧)</h2>
+    <p>玻璃拟态 + 霓虹青。可参考对比。</p>
+  </div>
+</a>
+<a class="card" href="style-b-warm-editorial.html" style="opacity: 0.6;">
+  <div class="preview" style="background:linear-gradient(135deg,#faf8f5,#e8d5b0);color:#c44a1a">B</div>
+  <div class="info">
+    <h2>Style B — Warm Editorial (旧)</h2>
+    <p>纸质纹理 + 衬线。可参考对比。</p>
+  </div>
+</a>
+<a class="card" href="style-c-minimal-light.html" style="opacity: 0.6;">
+  <div class="preview" style="background:linear-gradient(135deg,#fff,#e8f2ff);color:#007aff">C</div>
+  <div class="info">
+    <h2>Style C — Minimal Light (旧)</h2>
+    <p>Apple 风格极简。可参考对比。</p>
+  </div>
+</a>
+
+<div class="footer">
+  📱 同一 WiFi 下访问 <b>http://192.168.1.8:3456</b>
+</div>
+
+</body>
+</html>

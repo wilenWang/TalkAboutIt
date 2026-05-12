@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkAboutIt — 让思想碰撞</title>
+<style>
+  /* ============================================================
+     TALKABOUTIT — WARM EDITORIAL STYLE
+     High-end magazine / literary journal aesthetic
+     ============================================================ */
+
+  :root {
+    --bg-cream:       #faf8f5;
+    --bg-paper:       #f5f1e8;
+    --card-white:     #fffef9;
+    --text-primary:   #2c2416;
+    --text-secondary: #6b5e4a;
+    --text-muted:     #9b8d7a;
+    --accent:         #c44a1a;
+    --accent-soft:    #e07b3e;
+    --accent-light:   #fdf0e8;
+    --border-warm:    #e0d6c2;
+    --border-thin:    #e8e0d3;
+    --shadow-card:    0 1px 3px rgba(60, 30, 10, 0.08), 0 4px 12px rgba(60, 30, 10, 0.04);
+    --shadow-table:   0 2px 8px rgba(40, 20, 5, 0.12), 0 8px 24px rgba(40, 20, 5, 0.06);
+    --wood-dark:      #6b4226;
+    --wood-mid:       #8b5e3c;
+    --wood-light:     #a67c52;
+    --wood-bg:        #d4b896;
+    --radius-sm:      4px;
+    --radius-md:      8px;
+    --radius-lg:      14px;
+    --radius-round:   50%;
+    --font-serif:     'Georgia', 'Times New Roman', 'Noto Serif SC', 'Source Han Serif SC', serif;
+    --font-sans:      'Helvetica Neue', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-mono:      'SF Mono', 'Consolas', 'Monaco', monospace;
+  }
+
+  /* ---- Paper texture background ---- */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--bg-cream);
+    background-image:
+      /* subtle paper fiber */
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(180, 160, 130, 0.03) 2px,
+        rgba(180, 160, 130, 0.03) 4px
+      ),
+      /* subtle noise-like grain via radial gradients */
+      radial-gradient(ellipse at 20% 50%, rgba(200, 180, 140, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(200, 170, 130, 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 80%, rgba(210, 190, 150, 0.05) 0%, transparent 50%);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ---- Layout container ---- */
+  .app-container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 36px 32px 60px;
+  }
+
+  /* ============================================================
+     HEADER
+     ============================================================ */
+  .header {
+    text-align: center;
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border-warm);
+    margin-bottom: 36px;
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+  .header-title {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    text-transform: none;
+  }
+  .header-title .accent-dot {
+    color: var(--accent);
+    font-size: 32px;
+  }
+  .header-subtitle {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-secondary);
+    letter-spacing: 4px;
+  }
+
+  /* ============================================================
+     MAIN LAYOUT — Two-column
+     ============================================================ */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ============================================================
+     LEFT PANEL — Persona Selector
+     ============================================================ */
+  .persona-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .panel-label {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    padding-left: 2px;
+  }
+
+  /* Persona card */
+  .persona-card {
+    background: var(--card-white);
+    border: 1px solid var(--border-thin);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    user-select: none;
+  }
+  .persona-card:hover {
+    border-color: var(--border-warm);
+    box-shadow: 0 2px 6px rgba(60, 30, 10, 0.10), 0 6px 16px rgba(60, 30, 10, 0.06);
+    transform: translateY(-1px);
+  }
+  .persona-card.selected {
+    border-color: var(--accent-soft);
+    background: var(--accent-light);
+    box-shadow: 0 0 0 1px rgba(196, 74, 26, 0.15), 0 2px 8px rgba(196, 74, 26, 0.08);
+  }
+  .persona-card .check-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border-warm);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    background: var(--card-white);
+  }
+  .persona-card.selected .check-indicator {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .persona-card.selected .check-indicator::after {
+    content: '✓';
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .persona-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-round);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .persona-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .persona-name {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+  .persona-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    letter-spacing: 0.3px;
+  }
+  /* Avatar colors */
+  .avatar-jobs    { background: linear-gradient(135deg, #3a3a3a, #5a5a5a); }
+  .avatar-musk    { background: linear-gradient(135deg, #1a3a5c, #2a5a8c); }
+  .avatar-naval   { background: linear-gradient(135deg, #2d5a27, #4a8a3f); }
+  .avatar-yiming  { background: linear-gradient(135deg, #8b1a1a, #c42a2a); }
+  .avatar-xiaolong { background: linear-gradient(135deg, #4a2a6a, #7a4aaa); }
+
+  /* ============================================================
+     CENTER AREA
+     ============================================================ */
+  .center-area {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ---- Round Table ---- */
+  .round-table-section {
+    background: var(--card-white);
+    border: 1px solid var(--border-thin);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-table);
+    overflow: hidden;
+  }
+  .round-table-header {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-thin);
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    background: #fefdfa;
+  }
+  .round-table-surface {
+    /* Wooden table feel */
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 50%),
+      linear-gradient(90deg,
+        var(--wood-bg) 0%,
+        #d9c0a0 8%,
+        #d4b896 16%,
+        #d9bf9c 25%,
+        #d3b795 34%,
+        #d8bd9a 42%,
+        #d4b896 50%,
+        #d9bf9c 58%,
+        #d3b795 66%,
+        #d8bd9a 75%,
+        #d4b896 84%,
+        #d9c0a0 92%,
+        var(--wood-bg) 100%
+      );
+    background-color: var(--wood-bg);
+    padding: 40px 24px 36px;
+    position: relative;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 3px solid var(--wood-dark);
+    border-bottom: 3px solid var(--wood-dark);
+  }
+  /* Wood grain detail lines */
+  .round-table-surface::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 6px,
+        rgba(139, 94, 60, 0.06) 6px,
+        rgba(139, 94, 60, 0.06) 7px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 40px,
+        rgba(107, 66, 38, 0.03) 40px,
+        rgba(107, 66, 38, 0.03) 41px
+      );
+    pointer-events: none;
+  }
+  /* Rounded table edge highlight */
+  .round-table-surface::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 1px;
+  }
+
+  /* Semi-circle avatar arrangement */
+  .avatar-semicircle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    position: relative;
+    z-index: 1;
+    padding: 8px 0 20px;
+  }
+  .semi-avatar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: translateY(-16px);
+    transition: transform 0.3s ease;
+  }
+  .semi-avatar-wrapper:nth-child(2) {
+    transform: translateY(-36px);
+  }
+  .semi-avatar-img {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-round);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.20), 0 0 0 4px rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+  .semi-avatar-name {
+    font-family: var(--font-serif);
+    font-size: 12px;
+    font-weight: 600;
+    color: #3e2a14;
+    text-align: center;
+    background: rgba(255,255,255,0.7);
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+    backdrop-filter: blur(2px);
+  }
+
+  /* ---- Topic Input & Controls ---- */
+  .topic-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .topic-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .topic-input {
+    flex: 1;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-family: var(--font-serif);
+    border: 1px solid var(--border-warm);
+    border-radius: var(--radius-md);
+    background: var(--card-white);
+    color: var(--text-primary);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .topic-input:focus {
+    border-color: var(--accent-soft);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04), 0 0 0 3px rgba(196, 74, 26, 0.08);
+  }
+  .topic-input::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Rounds slider */
+  .rounds-slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .rounds-slider-label {
+    font-family: var(--font-serif);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .rounds-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-warm);
+    outline: none;
+    cursor: pointer;
+  }
+  .rounds-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(196, 74, 26, 0.3);
+    transition: transform 0.15s;
+  }
+  .rounds-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.12);
+  }
+  .rounds-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(196, 74, 26, 0.3);
+  }
+  .rounds-value {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 22px;
+    text-align: center;
+  }
+
+  /* Start button */
+  .btn-start {
+    align-self: flex-start;
+    padding: 13px 36px;
+    font-size: 15px;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(196, 74, 26, 0.25);
+    text-transform: none;
+  }
+  .btn-start:hover {
+    background: #a83d15;
+    box-shadow: 0 4px 14px rgba(196, 74, 26, 0.35);
+    transform: translateY(-1px);
+  }
+  .btn-start:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(196, 74, 26, 0.2);
+  }
+
+  /* ============================================================
+     DISCUSSION VIEW
+     ============================================================ */
+  .discussion-section {
+    background: var(--card-white);
+    border: 1px solid var(--border-thin);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .discussion-header {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-thin);
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    background: #fefdfa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .discussion-topic-badge {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0;
+    font-style: italic;
+    text-transform: none;
+  }
+  .discussion-messages {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background:
+      linear-gradient(180deg, #fffef9 0%, #fdfbf5 100%);
+  }
+
+  /* Message bubble */
+  .message-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    animation: messageIn 0.4s ease-out;
+  }
+  @keyframes messageIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-round);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  }
+  .msg-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .msg-speaker-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .msg-speaker {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .msg-role-tag {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .msg-bubble {
+    display: inline-block;
+    max-width: 100%;
+    padding: 12px 18px;
+    border-radius: 2px 14px 14px 14px;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  /* Bubble color accents per persona */
+  .msg-bubble.bubble-jobs {
+    background: #f5f5f5;
+    border-left: 3px solid #4a4a4a;
+  }
+  .msg-bubble.bubble-musk {
+    background: #f0f4f8;
+    border-left: 3px solid #2a5a8c;
+  }
+  .msg-bubble.bubble-naval {
+    background: #f2f6f0;
+    border-left: 3px solid #3d7a35;
+  }
+  .msg-bubble.bubble-yiming {
+    background: #fdf5f5;
+    border-left: 3px solid #b83a3a;
+  }
+  .msg-bubble.bubble-xiaolong {
+    background: #f8f5fc;
+    border-left: 3px solid #6a3faa;
+  }
+  .msg-round-label {
+    font-family: var(--font-serif);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 4px;
+    padding-left: 4px;
+  }
+
+  /* Typing indicator */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0 0 14px;
+    opacity: 0.7;
+  }
+  .typing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: typingBounce 1.2s infinite ease-in-out;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%           { transform: translateY(-6px); opacity: 0.9; }
+  }
+
+  /* ============================================================
+     FOOTER NOTE
+     ============================================================ */
+  .footer-note {
+    text-align: center;
+    padding: 28px 0 0;
+    font-family: var(--font-serif);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    font-style: italic;
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 800px) {
+    .main-layout {
+      grid-template-columns: 1fr;
+    }
+    .persona-panel {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .persona-card {
+      flex: 1 1 140px;
+      min-width: 130px;
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .persona-card .persona-avatar {
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+    }
+    .persona-name { font-size: 12px; }
+    .persona-role { display: none; }
+    .avatar-semicircle { gap: 18px; }
+    .semi-avatar-img { width: 48px; height: 48px; font-size: 22px; }
+    .topic-row { flex-direction: column; align-items: stretch; }
+    .app-container { padding: 16px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <header class="header">
+    <h1 class="header-title">TalkAbout<span class="accent-dot">It</span></h1>
+    <p class="header-subtitle">让思想碰撞</p>
+  </header>
+
+  <!-- ============================================================
+       MAIN LAYOUT
+       ============================================================ -->
+  <div class="main-layout">
+
+    <!-- ==========================================================
+         LEFT PANEL — Persona Selector
+         ========================================================== -->
+    <aside class="persona-panel">
+      <div class="panel-label">Participants</div>
+
+      <!-- Steve Jobs — selected -->
+      <div class="persona-card selected" data-persona="jobs">
+        <div class="check-indicator"></div>
+        <div class="persona-avatar avatar-jobs">🍎</div>
+        <div class="persona-info">
+          <div class="persona-name">Steve Jobs</div>
+          <div class="persona-role">Apple Co-founder · Visionary</div>
+        </div>
+      </div>
+
+      <!-- Elon Musk — selected -->
+      <div class="persona-card selected" data-persona="musk">
+        <div class="check-indicator"></div>
+        <div class="persona-avatar avatar-musk">🚀</div>
+        <div class="persona-info">
+          <div class="persona-name">Elon Musk</div>
+          <div class="persona-role">Tesla · SpaceX · xAI</div>
+        </div>
+      </div>
+
+      <!-- Naval Ravikant — selected -->
+      <div class="persona-card selected" data-persona="naval">
+        <div class="check-indicator"></div>
+        <div class="persona-avatar avatar-naval">🧘</div>
+        <div class="persona-info">
+          <div class="persona-name">Naval Ravikant</div>
+          <div class="persona-role">AngelList · Philosopher</div>
+        </div>
+      </div>
+
+      <!-- 张一鸣 — unselected -->
+      <div class="persona-card" data-persona="yiming">
+        <div class="check-indicator"></div>
+        <div class="persona-avatar avatar-yiming">🇨🇳</div>
+        <div class="persona-info">
+          <div class="persona-name">张一鸣</div>
+          <div class="persona-role">字节跳动 · TikTok</div>
+        </div>
+      </div>
+
+      <!-- 张小龙 — unselected -->
+      <div class="persona-card" data-persona="xiaolong">
+        <div class="check-indicator"></div>
+        <div class="persona-avatar avatar-xiaolong">💬</div>
+        <div class="persona-info">
+          <div class="persona-name">张小龙</div>
+          <div class="persona-role">微信之父 · PM</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==========================================================
+         CENTER AREA
+         ========================================================== -->
+    <main class="center-area">
+
+      <!-- ---- Round Table ---- -->
+      <section class="round-table-section">
+        <div class="round-table-header">Round Table</div>
+        <div class="round-table-surface">
+          <div class="avatar-semicircle">
+            <!-- Steve Jobs -->
+            <div class="semi-avatar-wrapper">
+              <div class="semi-avatar-img avatar-jobs">🍎</div>
+              <span class="semi-avatar-name">Steve Jobs</span>
+            </div>
+            <!-- Elon Musk (center, higher) -->
+            <div class="semi-avatar-wrapper">
+              <div class="semi-avatar-img avatar-musk">🚀</div>
+              <span class="semi-avatar-name">Elon Musk</span>
+            </div>
+            <!-- Naval Ravikant -->
+            <div class="semi-avatar-wrapper">
+              <div class="semi-avatar-img avatar-naval">🧘</div>
+              <span class="semi-avatar-name">Naval Ravikant</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- Topic Input & Controls ---- -->
+      <div class="topic-controls">
+        <div class="topic-row">
+          <input
+            type="text"
+            class="topic-input"
+            placeholder="输入讨论话题..."
+            value="AI 会取代程序员吗？"
+          >
+          <div class="rounds-slider-group">
+            <span class="rounds-slider-label">轮次</span>
+            <input
+              type="range"
+              class="rounds-slider"
+              min="1"
+              max="5"
+              value="3"
+              id="roundsSlider"
+            >
+            <span class="rounds-value" id="roundsValue">3</span>
+          </div>
+        </div>
+        <button class="btn-start" id="startBtn">开始讨论</button>
+      </div>
+
+      <!-- ==========================================================
+           DISCUSSION VIEW (fake messages)
+           ========================================================== -->
+      <section class="discussion-section">
+        <div class="discussion-header">
+          <span>Discussion</span>
+          <span class="discussion-topic-badge">AI 会取代程序员吗？</span>
+        </div>
+        <div class="discussion-messages">
+
+          <!-- Message 1 — Elon Musk (Round 1) -->
+          <div class="message-row">
+            <div class="msg-avatar avatar-musk">🚀</div>
+            <div class="msg-content">
+              <div class="msg-speaker-row">
+                <span class="msg-speaker">Elon Musk</span>
+                <span class="msg-role-tag">Tesla · SpaceX</span>
+              </div>
+              <div class="msg-bubble bubble-musk">
+                AI won't <em>replace</em> programmers — it will <strong>10x</strong> them. The real question isn't substitution, it's <strong>amplification</strong>. A single engineer with strong AI tooling will do the work of ten. But the creative vision, the taste, the ability to ask the right questions — that remains deeply human. What <em>will</em> change is the nature of the job itself.
+              </div>
+              <div class="msg-round-label">Round 1 · 1/3</div>
+            </div>
+          </div>
+
+          <!-- Message 2 — Naval Ravikant (Round 1) -->
+          <div class="message-row">
+            <div class="msg-avatar avatar-naval">🧘</div>
+            <div class="msg-content">
+              <div class="msg-speaker-row">
+                <span class="msg-speaker">Naval Ravikant</span>
+                <span class="msg-role-tag">AngelList · Philosopher</span>
+              </div>
+              <div class="msg-bubble bubble-naval">
+                Coding is <strong>leverage</strong>. AI is <strong>meta-leverage</strong> — leverage on leverage. The programmer who learns to wield AI becomes a force multiplier. But here's the nuance: the <em>craft</em> of programming — the deep satisfaction of building something from first principles — that's not going anywhere. What disappears is the boilerplate, the busywork, the mechanical translation of intent to syntax. That was never the valuable part anyway.
+              </div>
+              <div class="msg-round-label">Round 1 · 2/3</div>
+            </div>
+          </div>
+
+          <!-- Message 3 — Steve Jobs (Round 1) -->
+          <div class="message-row">
+            <div class="msg-avatar avatar-jobs">🍎</div>
+            <div class="msg-content">
+              <div class="msg-speaker-row">
+                <span class="msg-speaker">Steve Jobs</span>
+                <span class="msg-role-tag">Apple Co-founder · Visionary</span>
+              </div>
+              <div class="msg-bubble bubble-jobs">
+                Technology is nothing without the <strong>humanities</strong>. The best programmers have always been the ones who sit at the intersection of technology and liberal arts. AI doesn't change that equation — it <em>intensifies</em> it. The future belongs to those who can <strong>taste</strong>. Who can feel, in their gut, whether something is beautiful or not. An AI can generate a thousand variations, but it cannot tell you which one <em>matters</em>. That requires a human soul.
+              </div>
+              <div class="msg-round-label">Round 1 · 3/3</div>
+            </div>
+          </div>
+
+          <!-- Typing indicator for next round -->
+          <div class="typing-indicator">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <div class="footer-note">
+    TalkAboutIt ✦ Roundtable Discussion ✦ Style B — Warm Editorial
+  </div>
+
+</div>
+
+<!-- ============================================================
+     LIGHT INTERACTIVITY (self-contained)
+     ============================================================ -->
+<script>
+  (function() {
+    // --- Persona card toggle ---
+    const cards = document.querySelectorAll('.persona-card');
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        card.classList.toggle('selected');
+        updateRoundTable();
+      });
+    });
+
+    // --- Rounds slider ---
+    const slider = document.getElementById('roundsSlider');
+    const roundsValue = document.getElementById('roundsValue');
+    slider.addEventListener('input', () => {
+      roundsValue.textContent = slider.value;
+    });
+
+    // --- Update round table avatars based on selection ---
+    function updateRoundTable() {
+      const selectedCards = document.querySelectorAll('.persona-card.selected');
+      const surface = document.querySelector('.round-table-surface');
+      const existingSemi = surface.querySelector('.avatar-semicircle');
+      if (existingSemi) existingSemi.remove();
+
+      const semi = document.createElement('div');
+      semi.className = 'avatar-semicircle';
+
+      selectedCards.forEach((card, idx) => {
+        const persona = card.dataset.persona;
+        const avatarEl = card.querySelector('.persona-avatar');
+        const emoji = avatarEl.textContent.trim();
+        const avatarClass = Array.from(avatarEl.classList)
+          .find(c => c.startsWith('avatar-'));
+        const name = card.querySelector('.persona-name').textContent.trim();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'semi-avatar-wrapper';
+
+        // Center item gets extra lift
+        if (selectedCards.length === 3 && idx === 1) {
+          wrapper.style.transform = 'translateY(-36px)';
+        } else if (selectedCards.length === 1) {
+          wrapper.style.transform = 'translateY(-20px)';
+        } else if (selectedCards.length === 2) {
+          wrapper.style.transform = idx === 0 ? 'translateY(-20px)' : 'translateY(-20px)';
+        }
+
+        const img = document.createElement('div');
+        img.className = 'semi-avatar-img ' + (avatarClass || '');
+        img.textContent = emoji;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'semi-avatar-name';
+        nameSpan.textContent = name;
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(nameSpan);
+        semi.appendChild(wrapper);
+      });
+
+      // If no one selected, show a placeholder
+      if (selectedCards.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.style.cssText =
+          'font-family:var(--font-serif);font-style:italic;color:var(--text-muted);font-size:15px;z-index:1;';
+        placeholder.textContent = 'Select participants to begin…';
+        semi.appendChild(placeholder);
+      }
+
+      surface.appendChild(semi);
+    }
+
+    // --- Start button pulse ---
+    const startBtn = document.getElementById('startBtn');
+    startBtn.addEventListener('click', () => {
+      const selected = document.querySelectorAll('.persona-card.selected').length;
+      if (selected === 0) {
+        // Subtle shake on the first card
+        const firstCard = document.querySelector('.persona-card');
+        if (firstCard) {
+          firstCard.style.animation = 'none';
+          firstCard.offsetHeight;
+          firstCard.style.animation = 'shake 0.4s ease';
+          setTimeout(() => { firstCard.style.animation = ''; }, 400);
+        }
+        return;
+      }
+      // Brief pulse animation
+      startBtn.style.transform = 'scale(0.96)';
+      setTimeout(() => { startBtn.style.transform = ''; }, 150);
+
+      // Scroll to discussion
+      const discussion = document.querySelector('.discussion-section');
+      if (discussion) {
+        discussion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+
+    // Shake keyframes (injected)
+    const shakeStyle = document.createElement('style');
+    shakeStyle.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%       { transform: translateX(-4px); }
+        40%       { transform: translateX(4px); }
+        60%       { transform: translateX(-3px); }
+        80%       { transform: translateX(2px); }
+      }
+    `;
+    document.head.appendChild(shakeStyle);
+  })();
+</script>
+
+</body>
+</html>

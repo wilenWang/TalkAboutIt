@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkAboutIt — 多角色 AI 圆桌讨论</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', sans-serif;
+    background: #ffffff;
+    color: #1d1d1f;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* ===== Layout Container ===== */
+  .app {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    text-align: center;
+    padding-bottom: 40px;
+    border-bottom: 1px solid #e8e8ed;
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1d1d1f;
+    margin-bottom: 6px;
+  }
+  .header .subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: #86868b;
+    letter-spacing: 0.01em;
+  }
+
+  /* ===== Main Grid ===== */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+
+  /* ===== Persona Selector Panel ===== */
+  .persona-panel {}
+  .persona-panel .panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #86868b;
+    margin-bottom: 16px;
+  }
+  .persona-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .persona-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 1px solid #e5e5ea;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease;
+    user-select: none;
+  }
+  .persona-card:hover {
+    border-color: #c7c7cc;
+    background: #fafafa;
+  }
+  .persona-card.selected {
+    border-color: #007aff;
+    background: #f5f9ff;
+  }
+  .persona-card .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: #f2f2f7;
+  }
+  .persona-card .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .persona-card .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d1d1f;
+  }
+  .persona-card .role {
+    font-size: 11px;
+    color: #86868b;
+    margin-top: 1px;
+  }
+  .persona-card input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid #c7c7cc;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+    position: relative;
+    outline: none;
+  }
+  .persona-card input[type="checkbox"]:checked {
+    border-color: #007aff;
+    background: #007aff;
+  }
+  .persona-card input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 6.5px;
+    width: 4px;
+    height: 8px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* ===== Center Panel ===== */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  /* ===== Round Table Area ===== */
+  .roundtable-area {
+    background: #fafafa;
+    border: 1px solid #e8e8ed;
+    border-radius: 16px;
+    padding: 40px 32px 32px;
+    text-align: center;
+  }
+  .roundtable-area .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #aeaeb2;
+    margin-bottom: 28px;
+  }
+  .roundtable {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 28px;
+    position: relative;
+  }
+  /* curved tableline behind avatars */
+  .roundtable::before {
+    content: '';
+    position: absolute;
+    bottom: 64px;
+    left: 15%;
+    right: 15%;
+    height: 90px;
+    border: 1.5px solid #d1d1d6;
+    border-radius: 50% 50% 0 0 / 70% 70% 0 0;
+    border-bottom: none;
+    pointer-events: none;
+  }
+  .roundtable-persona {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .roundtable-persona .r-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    background: #ffffff;
+    border: 2px solid #e8e8ed;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .roundtable-persona .r-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1d1d1f;
+  }
+  .roundtable-persona .r-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: -6px;
+  }
+  .dot-jobs  { background: #007aff; }
+  .dot-musk  { background: #ff6b35; }
+  .dot-naval { background: #34c759; }
+  .dot-ym    { background: #ff3b30; }
+  .dot-xl    { background: #af52de; }
+
+  /* ===== Topic Input Area ===== */
+  .topic-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .topic-input-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .topic-input {
+    flex: 1;
+    padding: 13px 18px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 1px solid #d1d1d6;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    color: #1d1d1f;
+    background: #ffffff;
+  }
+  .topic-input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.10);
+  }
+  .topic-input::placeholder {
+    color: #aeaeb2;
+  }
+
+  /* Round slider */
+  .rounds-slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .rounds-slider-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #86868b;
+    white-space: nowrap;
+  }
+  .rounds-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100px;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e5ea;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.18s ease;
+  }
+  .rounds-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #007aff;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    transition: transform 0.12s ease;
+  }
+  .rounds-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
+  }
+  .rounds-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #007aff;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  /* Start button */
+  .btn-start {
+    align-self: flex-start;
+    padding: 12px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #ffffff;
+    background: #007aff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 4px rgba(0,122,255,0.20);
+  }
+  .btn-start:hover {
+    background: #0066d6;
+    box-shadow: 0 2px 8px rgba(0,122,255,0.28);
+  }
+  .btn-start:active {
+    transform: scale(0.97);
+  }
+
+  /* ===== Divider ===== */
+  .section-divider {
+    height: 1px;
+    background: #e8e8ed;
+    margin: 8px 0;
+  }
+
+  /* ===== Discussion View ===== */
+  .discussion-view {}
+  .discussion-view .disc-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #86868b;
+    margin-bottom: 20px;
+  }
+  .messages {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Message bubble */
+  .message {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    animation: fadeInUp 0.35s ease both;
+  }
+  .message:nth-child(2) { animation-delay: 0.10s; }
+  .message:nth-child(3) { animation-delay: 0.20s; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    background: #f2f2f7;
+    flex-shrink: 0;
+  }
+  .msg-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .msg-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .msg-speaker {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+  }
+  .msg-time {
+    font-size: 11px;
+    color: #aeaeb2;
+  }
+  .msg-bubble {
+    position: relative;
+    padding: 14px 18px;
+    background: #fafafa;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #3a3a3c;
+    line-height: 1.65;
+    /* left color bar */
+    padding-left: 22px;
+    overflow: hidden;
+  }
+  .msg-bubble::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 4px;
+    border-radius: 0 3px 3px 0;
+  }
+  .msg-bubble.bar-jobs::before  { background: #007aff; }
+  .msg-bubble.bar-musk::before  { background: #ff6b35; }
+  .msg-bubble.bar-naval::before { background: #34c759; }
+  .msg-bubble.bar-ym::before    { background: #ff3b30; }
+  .msg-bubble.bar-xl::before    { background: #af52de; }
+
+  /* ===== Footer ===== */
+  .footer {
+    margin-top: 64px;
+    text-align: center;
+    font-size: 12px;
+    color: #aeaeb2;
+    letter-spacing: 0.02em;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 860px) {
+    .app { padding: 32px 20px 60px; }
+    .main-grid {
+      grid-template-columns: 1fr;
+      gap: 36px;
+    }
+    .roundtable { gap: 18px; }
+    .roundtable::before { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <h1>TalkAboutIt</h1>
+    <p class="subtitle">多角色 AI 圆桌讨论</p>
+  </header>
+
+  <!-- ===== MAIN GRID ===== -->
+  <div class="main-grid">
+
+    <!-- Left: Persona Selector -->
+    <aside class="persona-panel">
+      <div class="panel-title">选择角色</div>
+      <div class="persona-cards">
+
+        <!-- Steve Jobs — checked -->
+        <label class="persona-card selected">
+          <div class="avatar">🍎</div>
+          <div class="info">
+            <div class="name">Steve Jobs</div>
+            <div class="role">Apple 联合创始人</div>
+          </div>
+          <input type="checkbox" checked>
+        </label>
+
+        <!-- Elon Musk — checked -->
+        <label class="persona-card selected">
+          <div class="avatar">🚀</div>
+          <div class="info">
+            <div class="name">Elon Musk</div>
+            <div class="role">Tesla &amp; SpaceX CEO</div>
+          </div>
+          <input type="checkbox" checked>
+        </label>
+
+        <!-- Naval Ravikant — checked -->
+        <label class="persona-card selected">
+          <div class="avatar">🧘</div>
+          <div class="info">
+            <div class="name">Naval Ravikant</div>
+            <div class="role">AngelList 创始人</div>
+          </div>
+          <input type="checkbox" checked>
+        </label>
+
+        <!-- 张一鸣 — unchecked -->
+        <label class="persona-card">
+          <div class="avatar">🇨🇳</div>
+          <div class="info">
+            <div class="name">张一鸣</div>
+            <div class="role">字节跳动 创始人</div>
+          </div>
+          <input type="checkbox">
+        </label>
+
+        <!-- 张小龙 — unchecked -->
+        <label class="persona-card">
+          <div class="avatar">💬</div>
+          <div class="info">
+            <div class="name">张小龙</div>
+            <div class="role">微信 创始人</div>
+          </div>
+          <input type="checkbox">
+        </label>
+
+      </div>
+    </aside>
+
+    <!-- Center: Roundtable + Controls + Discussion -->
+    <main class="center-panel">
+
+      <!-- ===== ROUND TABLE ===== -->
+      <section class="roundtable-area">
+        <div class="section-label">圆桌 · 3 位角色就坐</div>
+        <div class="roundtable">
+          <div class="roundtable-persona">
+            <div class="r-avatar">🍎</div>
+            <div class="r-dot dot-jobs"></div>
+            <div class="r-name">Steve Jobs</div>
+          </div>
+          <div class="roundtable-persona">
+            <div class="r-avatar">🚀</div>
+            <div class="r-dot dot-musk"></div>
+            <div class="r-name">Elon Musk</div>
+          </div>
+          <div class="roundtable-persona">
+            <div class="r-avatar">🧘</div>
+            <div class="r-dot dot-naval"></div>
+            <div class="r-name">Naval Ravikant</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== TOPIC INPUT ===== -->
+      <div class="topic-area">
+        <div class="topic-input-row">
+          <input
+            class="topic-input"
+            type="text"
+            value="AI 会取代程序员吗？"
+            placeholder="输入讨论话题..."
+          >
+          <div class="rounds-slider-group">
+            <label>轮数</label>
+            <input type="range" class="rounds-slider" min="1" max="5" value="3" id="roundsSlider">
+            <span class="rounds-value" id="roundsValue">3</span>
+          </div>
+        </div>
+        <button class="btn-start">开始讨论</button>
+      </div>
+
+      <!-- ===== DIVIDER ===== -->
+      <div class="section-divider"></div>
+
+      <!-- ===== DISCUSSION VIEW ===== -->
+      <section class="discussion-view">
+        <div class="disc-title">讨论记录</div>
+        <div class="messages">
+
+          <!-- Message 1 — Steve Jobs -->
+          <div class="message">
+            <div class="msg-avatar-sm">🍎</div>
+            <div class="msg-body">
+              <div class="msg-meta">
+                <span class="msg-speaker">Steve Jobs</span>
+                <span class="msg-time">刚刚</span>
+              </div>
+              <div class="msg-bubble bar-jobs">
+                程序员不会被取代，但只会写代码的程序员会被取代。真正的价值在于将技术与人文结合 —— 技术本身不是目的，改变世界才是。我们要做的不是和 AI 比写代码的速度，而是去思考什么值得被创造。
+              </div>
+            </div>
+          </div>
+
+          <!-- Message 2 — Elon Musk -->
+          <div class="message">
+            <div class="msg-avatar-sm">🚀</div>
+            <div class="msg-body">
+              <div class="msg-meta">
+                <span class="msg-speaker">Elon Musk</span>
+                <span class="msg-time">刚刚</span>
+              </div>
+              <div class="msg-bubble bar-musk">
+                AI 的发展速度远超大多数人的想象。短期内它会成为程序员的超级助手，大幅提升效率；长期来看，当 AI 能够自我迭代和编程时，传统意义上的"程序员"这个角色必然会被重新定义。但这不意味着人类没有价值 —— 我们需要去解决更宏观的问题：AI 的对齐、安全，以及如何让 AI 服务于全人类的利益。
+              </div>
+            </div>
+          </div>
+
+          <!-- Message 3 — Naval Ravikant -->
+          <div class="message">
+            <div class="msg-avatar-sm">🧘</div>
+            <div class="msg-body">
+              <div class="msg-meta">
+                <span class="msg-speaker">Naval Ravikant</span>
+                <span class="msg-time">刚刚</span>
+              </div>
+              <div class="msg-bubble bar-naval">
+                代码本身是杠杆，而 AI 是杠杆的杠杆。真正稀缺的不是写代码的能力，而是判断力 —— 知道要构建什么、为什么构建。未来的核心竞争力在于产品思维和决策质量，而不是敲键盘的速度。拥抱 AI 作为你的联合创始人，把精力集中在识别问题和定义解决方案上。
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    TalkAboutIt · 多角色 AI 圆桌讨论 · 原型预览
+  </footer>
+
+</div>
+
+<!-- ===== Slider sync script ===== -->
+<script>
+  (function() {
+    var slider = document.getElementById('roundsSlider');
+    var display = document.getElementById('roundsValue');
+    slider.addEventListener('input', function() {
+      display.textContent = slider.value;
+    });
+
+    // Checkbox toggle visual state
+    var cards = document.querySelectorAll('.persona-card');
+    cards.forEach(function(card) {
+      var checkbox = card.querySelector('input[type="checkbox"]');
+      card.addEventListener('click', function(e) {
+        if (e.target === checkbox) return; // let native behavior handle
+        checkbox.checked = !checkbox.checked;
+        card.classList.toggle('selected', checkbox.checked);
+      });
+      checkbox.addEventListener('change', function() {
+        card.classList.toggle('selected', checkbox.checked);
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
