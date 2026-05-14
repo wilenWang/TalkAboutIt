@@ -14,7 +14,7 @@ export default function RoundSelect({ value, onChange }: Props) {
         onChange={(e) => onChange(Number(e.target.value))}
         className="px-2.5 py-2 border border-black/10 rounded text-sm bg-white text-black/95 outline-none focus:border-[#0075de] transition-colors"
       >
-        {[1, 2, 3, 4, 5].map((n) => (
+        {[1, 2, 3, 4, 5, 10, 15, 20].map((n) => (
           <option key={n} value={n}>
             {n}
           </option>

@@ -16,7 +16,7 @@ import (
 
 // GenerateFunc 是 LLM 生成函数的签名（流式）。
 // 返回只读 channel，逐块输出 ChatChunk；channel 关闭时表示生成结束。
-type GenerateFunc func(ctx context.Context, p persona.Persona, topic string, peers []string, round int) (<-chan llm.ChatChunk, error)
+type GenerateFunc func(ctx context.Context, p persona.Persona, topic string, peers []string, language string, convo *persona.ConversationContext) (<-chan llm.ChatChunk, error)
 
 // OnEventFunc 是事件写入后的回调签名，用于广播到 SSE 订阅者。
 type OnEventFunc func(evt session.Event)
@@ -26,6 +26,7 @@ type Engine struct {
 	store    *session.Store
 	loader   *persona.Loader
 	generate GenerateFunc
+	provider llm.Provider // 可选：真实 LLM provider（用于动态语言模式）
 	onEvent  OnEventFunc
 }
 
@@ -42,13 +43,22 @@ func NewEngine(store *session.Store, loader *persona.Loader, generate GenerateFu
 	}
 }
 
+// NewEngineWithProvider 创建带真实 LLM provider 的 Engine（支持动态语言模式）。
+func NewEngineWithProvider(store *session.Store, loader *persona.Loader, provider llm.Provider) *Engine {
+	return &Engine{
+		store:    store,
+		loader:   loader,
+		provider: provider,
+	}
+}
+
 // SetOnEvent 设置事件回调。
 func (e *Engine) SetOnEvent(fn OnEventFunc) {
 	e.onEvent = fn
 }
 
 // DefaultMockGenerate 是默认的 mock LLM：返回 persona 的 opening_line 作为单一块。
-func DefaultMockGenerate(ctx context.Context, p persona.Persona, topic string, peers []string, round int) (<-chan llm.ChatChunk, error) {
+func DefaultMockGenerate(ctx context.Context, p persona.Persona, topic string, peers []string, language string, convo *persona.ConversationContext) (<-chan llm.ChatChunk, error) {
 	ch := make(chan llm.ChatChunk, 1)
 	ch <- llm.ChatChunk{Content: p.Examples.OpeningLine}
 	close(ch)
@@ -56,31 +66,9 @@ func DefaultMockGenerate(ctx context.Context, p persona.Persona, topic string, p
 }
 
 // LLMGenerate 包装 llm.Provider 为 Engine 可用的 GenerateFunc。
-// 直接透传 Provider.Chat() 的 channel，不做额外转换。
 func LLMGenerate(provider llm.Provider) GenerateFunc {
-	return func(ctx context.Context, p persona.Persona, topic string, peers []string, round int) (<-chan llm.ChatChunk, error) {
-		// 构建 system prompt
-		systemPrompt := llm.BuildSystemPrompt(p, topic, peers, round)
-
-		// 构建 user message：第 1 轮为主题，后续轮次为上一轮其他人发言摘要
-		var userContent string
-		if round == 1 {
-			userContent = fmt.Sprintf("请围绕主题「%s」发表你的开场观点。", topic)
-		} else {
-			userContent = fmt.Sprintf("现在是第 %d 轮。请基于之前的讨论继续发言，可以直接回应或反驳其他人的观点。", round)
-		}
-
-		req := llm.ChatRequest{
-			Messages: []llm.ChatMessage{
-				{Role: "system", Content: systemPrompt},
-				{Role: "user", Content: userContent},
-			},
-			MaxTokens:   512,
-			Temperature: 0.8,
-			Stream:      true,
-		}
-
-		return provider.Chat(ctx, req)
+	return func(ctx context.Context, p persona.Persona, topic string, peers []string, language string, convo *persona.ConversationContext) (<-chan llm.ChatChunk, error) {
+		return provider.Chat(ctx, convo.BuildChatRequest(512, 0.8))
 	}
 }
 
@@ -121,6 +109,22 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 			return fmt.Errorf("加载 persona %s 失败: %w", id, err)
 		}
 		personas = append(personas, p)
+	}
+
+	contexts := make(map[string]*persona.ConversationContext, len(personas))
+	states := make(map[string]*persona.PerPersonaState)
+	for _, p := range personas {
+		state := &persona.PerPersonaState{}
+		states[p.ID] = state
+		contexts[p.ID] = persona.NewConversationContext(p.ID, llm.BuildStaticSystemPrompt(p), state)
+	}
+
+	// 动态确定 generate 函数：优先使用 provider，回退到固定 generate
+	generate := e.generate
+	if e.provider != nil {
+		generate = LLMGenerate(e.provider)
+	} else if generate == nil {
+		generate = DefaultMockGenerate
 	}
 
 	// stream_start 事件
@@ -179,7 +183,12 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 					peers = append(peers, peer.Name)
 				}
 			}
-			chunkCh, err := e.generate(speakCtx, p, rt.Topic, peers, round)
+			convo := contexts[p.ID]
+			convo.Round = round
+			convo.Append("user", "", llm.BuildDynamicContext(p, rt.Topic, peers, round, rt.Language, convo.State))
+			convo.Truncate(24)
+
+			chunkCh, err := generate(speakCtx, p, rt.Topic, peers, rt.Language, convo)
 			if err != nil {
 				cancel()
 				// 根据错误类型决定行为
@@ -265,6 +274,7 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 			_ = done
 
 			content := fullContent.String()
+			convo.Append("assistant", p.ID, content)
 
 			// message_done 事件
 			msgID := fmt.Sprintf("%s_r%d_s%d", tableID, round, i)
@@ -282,6 +292,17 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 			}
 			e.broadcast(*evt)
 			totalMessages++
+
+			if st, ok := states[p.ID]; ok {
+				st.RecordArgument(persona.ExtractArgument(content))
+			}
+			for _, peer := range personas {
+				if peer.ID == p.ID {
+					continue
+				}
+				contexts[peer.ID].Append("assistant", p.ID, content)
+				contexts[peer.ID].Truncate(24)
+			}
 		}
 
 		// round_end

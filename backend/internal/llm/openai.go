@@ -17,11 +17,12 @@ import (
 // OpenAIProvider 实现基于 OpenAI 兼容 API 的流式对话能力。
 // 通过修改 baseURL 可支持 DeepSeek / GLM / Kimi / Qwen 等兼容厂商。
 type OpenAIProvider struct {
-	name    string
-	model   string
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	name            string
+	model           string
+	apiKey          string
+	baseURL         string
+	client          *http.Client
+	disableThinking bool // 禁用 thinking/reasoning（DeepSeek 等默认开启的厂商需要）
 }
 
 // NewOpenAIProvider 创建 OpenAI 兼容 Provider 实例。
@@ -40,23 +41,35 @@ func NewOpenAIProvider(name, model, apiKey, baseURL string, client *http.Client)
 	}
 }
 
+// WithThinkingDisabled 禁用内置思考/推理模式（DeepSeek V4 等默认开启的模型需要）。
+func (o *OpenAIProvider) WithThinkingDisabled() *OpenAIProvider {
+	o.disableThinking = true
+	return o
+}
+
 // Name 返回 Provider 名称。
 func (o *OpenAIProvider) Name() string { return o.name }
 
 // Model 返回当前模型标识。
 func (o *OpenAIProvider) Model() string { return o.model }
 
-// openAIChatRequest 是发往 /v1/chat/completions 的请求体。
+// openAIChatRequest 是发往 /chat/completions 的请求体。
 type openAIChatRequest struct {
 	Model       string          `json:"model"`
 	Messages    []openAIMessage `json:"messages"`
 	MaxTokens   int             `json:"max_tokens,omitempty"`
 	Temperature float64         `json:"temperature,omitempty"`
 	Stream      bool            `json:"stream"`
+	Thinking    *thinkingConfig `json:"thinking,omitempty"` // DeepSeek thinking 控制
+}
+
+type thinkingConfig struct {
+	Type string `json:"type"` // "enabled" | "disabled"
 }
 
 type openAIMessage struct {
 	Role    string `json:"role"`
+	Name    string `json:"name,omitempty"`
 	Content string `json:"content"`
 }
 
@@ -68,6 +81,7 @@ type openAIChatResponse struct {
 		} `json:"delta"`
 		FinishReason *string `json:"finish_reason"`
 	} `json:"choices"`
+	Usage *ChatUsage `json:"usage,omitempty"`
 }
 
 // splitSSE 是 bufio.Scanner 的 SplitFunc，按空行（\n\n）分割 SSE 事件。
@@ -100,7 +114,7 @@ func (o *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (<-chan Chat
 	// 构造请求体
 	messages := make([]openAIMessage, len(req.Messages))
 	for i, m := range req.Messages {
-		messages[i] = openAIMessage{Role: m.Role, Content: m.Content}
+		messages[i] = openAIMessage{Role: m.Role, Name: m.Name, Content: m.Content}
 	}
 	model := o.model
 	if req.Model != "" {
@@ -112,6 +126,9 @@ func (o *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (<-chan Chat
 		MaxTokens:   req.MaxTokens,
 		Temperature: req.Temperature,
 		Stream:      true,
+	}
+	if o.disableThinking {
+		body.Thinking = &thinkingConfig{Type: "disabled"}
 	}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -134,9 +151,9 @@ func (o *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (<-chan Chat
 		// 区分代理/网络错误
 		if urlErr, ok := err.(*url.Error); ok && urlErr.Timeout() {
 			return nil, &ProviderError{
-				Code:        ErrProviderTimeout.Code,
-				Recoverable: true,
-				UserMessage: ErrProviderTimeout.UserMessage,
+				Code:          ErrProviderTimeout.Code,
+				Recoverable:   true,
+				UserMessage:   ErrProviderTimeout.UserMessage,
 				InternalError: err,
 			}
 		}
@@ -202,6 +219,11 @@ func (o *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (<-chan Chat
 			}
 
 			if len(streamResp.Choices) == 0 {
+				if streamResp.Usage != nil {
+					if !sendChunk(ctx, ch, ChatChunk{Usage: streamResp.Usage}) {
+						return
+					}
+				}
 				continue
 			}
 
@@ -213,8 +235,19 @@ func (o *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (<-chan Chat
 			}
 
 			if streamResp.Choices[0].FinishReason != nil && *streamResp.Choices[0].FinishReason != "" {
+				if streamResp.Usage != nil {
+					if !sendChunk(ctx, ch, ChatChunk{Usage: streamResp.Usage}) {
+						return
+					}
+				}
 				sendChunk(ctx, ch, ChatChunk{Done: true})
 				return
+			}
+
+			if streamResp.Usage != nil {
+				if !sendChunk(ctx, ch, ChatChunk{Usage: streamResp.Usage}) {
+					return
+				}
 			}
 		}
 

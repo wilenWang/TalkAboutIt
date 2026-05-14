@@ -1,10 +1,11 @@
-// Package llm 提供 TalkAboutIt 的 LLM Provider 抽象与实现。
-package llm
+// Package llm_test 提供 TalkAboutIt 的 LLM Provider 抽象与实现测试。
+package llm_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/wilenwang/talkaboutit/internal/llm"
 	"github.com/wilenwang/talkaboutit/internal/persona"
 )
 
@@ -76,7 +77,7 @@ func TestBuildSystemPrompt(t *testing.T) {
 	peers := []string{"Steve Jobs", "Elon Musk"}
 	round := 2
 
-	prompt := BuildSystemPrompt(p, topic, peers, round)
+	prompt := llm.BuildSystemPrompt(p, topic, peers, round, "zh-CN", nil)
 
 	// 验证关键字段是否出现在 prompt 中
 	checks := []string{
@@ -106,6 +107,34 @@ func TestBuildSystemPrompt(t *testing.T) {
 	}
 }
 
+// TestBuildSystemPrompt_DedupHint 验证已用论点去重提示能正确注入。
+func TestBuildSystemPrompt_DedupHint(t *testing.T) {
+	p := persona.Persona{
+		ID:        "dedup-test",
+		Name:      "Dedup",
+		RoleTitle: "Tester",
+		Language: persona.Language{
+			Primary: "zh-CN",
+		},
+	}
+
+	state := &persona.PerPersonaState{}
+	state.RecordArgument("论点一")
+	state.RecordArgument("论点二")
+
+	prompt := llm.BuildSystemPrompt(p, "测试主题", nil, 1, "zh-CN", state)
+
+	if !strings.Contains(prompt, "注意：避免重复") {
+		t.Error("prompt 应包含去重提示标题")
+	}
+	if !strings.Contains(prompt, "论点一") {
+		t.Error("prompt 应包含已用论点一")
+	}
+	if !strings.Contains(prompt, "论点二") {
+		t.Error("prompt 应包含已用论点二")
+	}
+}
+
 // TestBuildSystemPrompt_SteveJobs 验证 Steve Jobs 的 system prompt 构建符合预期。
 func TestBuildSystemPrompt_SteveJobs(t *testing.T) {
 	loader := persona.NewLoader("../../personas")
@@ -114,7 +143,7 @@ func TestBuildSystemPrompt_SteveJobs(t *testing.T) {
 		t.Fatalf("加载 steve-jobs 失败: %v", err)
 	}
 
-	prompt := BuildSystemPrompt(p, "AI 会取代产品经理吗？", []string{"Elon Musk", "Naval Ravikant"}, 1)
+	prompt := llm.BuildSystemPrompt(p, "AI 会取代产品经理吗？", []string{"Elon Musk", "Naval Ravikant"}, 1, "zh-CN", nil)
 
 	// 验证关键内容
 	if !strings.Contains(prompt, "Steve Jobs") {
@@ -128,5 +157,37 @@ func TestBuildSystemPrompt_SteveJobs(t *testing.T) {
 	}
 	if !strings.Contains(prompt, "Simplicity is the ultimate sophistication") {
 		t.Error("prompt 应包含核心信念")
+	}
+}
+
+func TestBuildStaticAndDynamicPromptSplit(t *testing.T) {
+	p := persona.Persona{
+		ID:          "split-test",
+		Name:        "Split Test",
+		RoleTitle:   "Tester",
+		Description: "用于验证静态与动态 prompt 拆分。",
+		Language: persona.Language{
+			Primary: "zh-CN",
+		},
+		Examples: persona.Examples{
+			OpeningLine: "开场示例",
+		},
+	}
+	state := &persona.PerPersonaState{}
+	state.RecordArgument("不要重复这个论点")
+
+	staticPrompt := llm.BuildStaticSystemPrompt(p)
+	if strings.Contains(staticPrompt, "当前轮次") {
+		t.Fatal("静态 prompt 不应包含当前轮次")
+	}
+	if strings.Contains(staticPrompt, "你必须用中文发言") {
+		t.Fatal("静态 prompt 不应包含语言规则 7")
+	}
+
+	dynamicPrompt := llm.BuildDynamicContext(p, "测试主题", []string{"Peer A"}, 2, "zh-CN", state)
+	for _, check := range []string{"测试主题", "Peer A", "第 2 轮", "你必须用中文发言", "不要重复这个论点", "开场示例"} {
+		if !strings.Contains(dynamicPrompt, check) {
+			t.Fatalf("动态 prompt 应包含 %q", check)
+		}
 	}
 }

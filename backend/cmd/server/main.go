@@ -64,18 +64,15 @@ func main() {
 	defer store.Close()
 
 	// 初始化 LLM Provider（通过工厂）
-	var generate engine.GenerateFunc
+	var eng *engine.Engine
 	provider, err := llm.NewProvider(*cfg)
 	if err != nil {
 		log.Printf("LLM Provider 初始化失败，回退到 mock: %v", err)
-		generate = nil // engine.NewEngine 内部会 fallback 到 DefaultMockGenerate
+		eng = engine.NewEngine(store, loader, nil)
 	} else {
 		log.Printf("LLM Provider 初始化成功: %s / %s", provider.Name(), provider.Model())
-		generate = engine.LLMGenerate(provider)
+		eng = engine.NewEngineWithProvider(store, loader, provider)
 	}
-
-	// 初始化 engine
-	eng := engine.NewEngine(store, loader, generate)
 
 	// 初始化 API handler
 	handler := api.NewHandler(loader, store, eng)

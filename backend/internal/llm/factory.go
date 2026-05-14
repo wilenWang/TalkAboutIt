@@ -63,8 +63,8 @@ func NewProvider(cfg config.Config) (Provider, error) {
 	if provCfg.Type == "" {
 		provCfg = config.ProviderConfig{
 			Type:    "openai",
-			BaseURL: "https://api.deepseek.com/v1",
-			Model:   "deepseek-chat",
+			BaseURL: "https://api.deepseek.com",
+			Model:   "deepseek-v4-pro",
 		}
 	}
 
@@ -79,13 +79,13 @@ func NewProvider(cfg config.Config) (Provider, error) {
 	case "openai":
 		baseURL := provCfg.BaseURL
 		if baseURL == "" {
-			baseURL = "https://api.deepseek.com/v1"
+			baseURL = "https://api.deepseek.com"
 		}
 		model := provCfg.Model
 		if model == "" {
-			model = "deepseek-chat"
+			model = "deepseek-v4-pro"
 		}
-		return NewOpenAIProvider(defaultName, model, provCfg.APIKey, baseURL, nil), nil
+		return NewOpenAIProvider(defaultName, model, provCfg.APIKey, baseURL, nil).WithThinkingDisabled(), nil
 	case "anthropic":
 		model := provCfg.Model
 		if model == "" {

@@ -5,8 +5,9 @@ import "context"
 
 // ChatMessage 代表对话中的一条消息。
 type ChatMessage struct {
-	Role    string `json:"role"`    // system / user / assistant
-	Content string `json:"content"` // 消息内容
+	Role    string `json:"role"`           // system / user / assistant
+	Name    string `json:"name,omitempty"` // 可选发言人标识
+	Content string `json:"content"`        // 消息内容
 }
 
 // ChatRequest 是调用 Provider.Chat 时的请求参数。
@@ -23,6 +24,16 @@ type ChatChunk struct {
 	Content string // 增量文本内容
 	Done    bool   // 是否为结束标记
 	Error   error  // 传输过程中的错误（如有）
+	Usage   *ChatUsage
+}
+
+// ChatUsage 是 provider 返回的 token 使用统计。
+type ChatUsage struct {
+	PromptTokens          int `json:"prompt_tokens,omitempty"`
+	CompletionTokens      int `json:"completion_tokens,omitempty"`
+	TotalTokens           int `json:"total_tokens,omitempty"`
+	PromptCacheHitTokens  int `json:"prompt_cache_hit_tokens,omitempty"`
+	PromptCacheMissTokens int `json:"prompt_cache_miss_tokens,omitempty"`
 }
 
 // Provider 是 LLM Gateway 的统一接口。

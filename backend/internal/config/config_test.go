@@ -46,8 +46,8 @@ llm:
     deepseek:
       type: openai
       api_key: "sk-test"
-      base_url: "https://api.deepseek.com/v1"
-      model: deepseek-chat
+      base_url: "https://api.deepseek.com"
+      model: deepseek-v4-pro
 personas:
   dir: "custom_personas"
 session:
@@ -78,8 +78,8 @@ session:
 		if prov.APIKey != "sk-test" {
 			t.Errorf("deepseek api_key 期望 sk-test，得到 %s", prov.APIKey)
 		}
-		if prov.Model != "deepseek-chat" {
-			t.Errorf("deepseek model 期望 deepseek-chat，得到 %s", prov.Model)
+		if prov.Model != "deepseek-v4-pro" {
+			t.Errorf("deepseek model 期望 deepseek-v4-pro，得到 %s", prov.Model)
 		}
 	}
 	if cfg.Personas.Dir != "custom_personas" {

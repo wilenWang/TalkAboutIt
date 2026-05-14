@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import PersonaSelector from './components/PersonaSelector';
 import TopicInput from './components/TopicInput';
 import RoundSelect from './components/RoundSelect';
+import LanguageToggle from './components/LanguageToggle';
 import StartButton from './components/StartButton';
 import MessageStream, { StreamMessage } from './components/MessageStream';
 import { createRoundtable, startRoundtable, getRoundtable, fetchPersonas } from './api/client';
@@ -36,6 +37,7 @@ export default function App() {
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
   const [topic, setTopic] = useState('AI 会取代程序员吗？');
   const [rounds, setRounds] = useState(3);
+  const [language, setLanguage] = useState<'zh-CN' | 'en-US'>('zh-CN');
   const [status, setStatus] = useState<AppStatus>('idle');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [currentSpeaker, setCurrentSpeaker] = useState<{ name: string; avatar: string } | null>(null);
@@ -288,7 +290,7 @@ export default function App() {
         topic,
         personas: selectedPersonas,
         max_rounds: rounds,
-        language: 'zh-CN',
+        language: language,
       });
 
       rtIdRef.current = rt.id;
@@ -382,6 +384,7 @@ export default function App() {
           <div className="bg-white border border-black/10 rounded-xl p-5 mb-6 shadow-[rgba(0,0,0,0.04)_0px_4px_18px]">
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <TopicInput value={topic} onChange={setTopic} />
+              <LanguageToggle value={language} onChange={setLanguage} />
               <RoundSelect value={rounds} onChange={setRounds} />
             </div>
             <div className="flex justify-end">

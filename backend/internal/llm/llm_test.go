@@ -1,10 +1,11 @@
-// Package llm 提供 TalkAboutIt 的 LLM Provider 抽象与实现。
-package llm
+// Package llm_test 提供 TalkAboutIt 的 LLM Provider 抽象与实现测试。
+package llm_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/wilenwang/talkaboutit/internal/llm"
 	"github.com/wilenwang/talkaboutit/internal/persona"
 )
 
@@ -77,7 +78,7 @@ func TestBuildSystemPrompt_ContainsAllPersonaFields(t *testing.T) {
 	peers := []string{"Peer A", "Peer B"}
 	round := 3
 
-	prompt := BuildSystemPrompt(p, topic, peers, round)
+	prompt := llm.BuildSystemPrompt(p, topic, peers, round, "zh-CN", nil)
 
 	// 定义所有应出现的字段检查项
 	checks := []string{
@@ -211,7 +212,7 @@ func TestBuildSystemPrompt_EmptyFields(t *testing.T) {
 		},
 	}
 
-	prompt := BuildSystemPrompt(p, "空字段测试", []string{}, 1)
+	prompt := llm.BuildSystemPrompt(p, "空字段测试", []string{}, 1, "zh-CN", nil)
 
 	// 验证基本结构仍然存在
 	if !strings.Contains(prompt, "Empty Test") {

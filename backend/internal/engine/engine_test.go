@@ -182,7 +182,7 @@ func TestDefaultMockGenerate_ChannelClosed(t *testing.T) {
 		},
 	}
 
-	ch, err := DefaultMockGenerate(context.Background(), p, "topic", []string{"peer"}, 1)
+	ch, err := DefaultMockGenerate(context.Background(), p, "topic", []string{"peer"}, "zh-CN", nil)
 	if err != nil {
 		t.Fatalf("DefaultMockGenerate 不应返回错误: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestDefaultMockGenerate_EmptyOpeningLine(t *testing.T) {
 		},
 	}
 
-	ch, err := DefaultMockGenerate(context.Background(), p, "topic", []string{}, 1)
+	ch, err := DefaultMockGenerate(context.Background(), p, "topic", []string{}, "zh-CN", nil)
 	if err != nil {
 		t.Fatalf("DefaultMockGenerate 不应返回错误: %v", err)
 	}
@@ -290,7 +290,7 @@ func TestEngine_Run_MidStreamRecoverableError(t *testing.T) {
 	}
 
 	// 模拟一个先吐出一个 chunk，然后抛出可恢复错误的 generate 函数
-	recoverableGen := func(ctx context.Context, p persona.Persona, topic string, peers []string, round int) (<-chan llm.ChatChunk, error) {
+	recoverableGen := func(ctx context.Context, p persona.Persona, topic string, peers []string, language string, convo *persona.ConversationContext) (<-chan llm.ChatChunk, error) {
 		ch := make(chan llm.ChatChunk, 2)
 		ch <- llm.ChatChunk{Content: "partial "}
 		ch <- llm.ChatChunk{Error: llm.ErrProviderTimeout}

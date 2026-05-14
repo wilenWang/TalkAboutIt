@@ -2,9 +2,9 @@ package persona
 
 import (
 	"testing"
+
+	"github.com/wilenwang/talkaboutit/internal/llm"
 )
-
-
 
 // TestLoaderLoadAll 验证 Loader 能正确加载所有 persona JSON。
 func TestLoaderLoadAll(t *testing.T) {
@@ -60,4 +60,44 @@ func TestLoaderLoadOne(t *testing.T) {
 	}
 }
 
+func TestConversationContext_BuildAndTruncate(t *testing.T) {
+	ctx := NewConversationContext("steve-jobs", "static-system", &PerPersonaState{})
+	ctx.Append("user", "", "round1")
+	ctx.Append("assistant", "steve-jobs", "reply1")
+	ctx.Append("assistant", "elon-musk", "peer1")
+	ctx.Append("user", "", "round2")
+	ctx.Append("assistant", "steve-jobs", "reply2")
 
+	req := ctx.BuildChatRequest(512, 0.8)
+	if len(req.Messages) != len(ctx.Messages) {
+		t.Fatalf("BuildChatRequest 应复制全部消息，got=%d want=%d", len(req.Messages), len(ctx.Messages))
+	}
+	if req.Messages[0].Role != "system" || req.Messages[0].Content != "static-system" {
+		t.Fatalf("首条消息应为 system，got=%+v", req.Messages[0])
+	}
+
+	ctx.Truncate(4)
+	if len(ctx.Messages) != 4 {
+		t.Fatalf("Truncate 后应保留 4 条消息，got=%d", len(ctx.Messages))
+	}
+	if ctx.Messages[0].Role != "system" {
+		t.Fatalf("Truncate 后首条仍应为 system，got=%+v", ctx.Messages[0])
+	}
+	if ctx.Messages[1].Role != "system" || ctx.Messages[1].Name != "" {
+		t.Fatalf("Truncate 后第二条应为 system 摘要消息（Name 为空），got=%+v", ctx.Messages[1])
+	}
+	if ctx.Messages[3].Content != "reply2" {
+		t.Fatalf("Truncate 后应保留最近消息，got=%+v", ctx.Messages[3])
+	}
+}
+
+func TestConversationContext_AppendPreservesName(t *testing.T) {
+	ctx := NewConversationContext("elon-musk", "system", nil)
+	ctx.Append("assistant", "steve-jobs", "Stay hungry.")
+
+	got := ctx.Messages[len(ctx.Messages)-1]
+	want := llm.ChatMessage{Role: "assistant", Name: "steve-jobs", Content: "Stay hungry."}
+	if got != want {
+		t.Fatalf("unexpected message: got=%+v want=%+v", got, want)
+	}
+}

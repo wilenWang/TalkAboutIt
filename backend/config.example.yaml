@@ -10,9 +10,9 @@ llm:
   providers:
     deepseek:
       type: openai
-      base_url: https://api.deepseek.com/v1
+      base_url: https://api.deepseek.com
       api_key: ${DEEPSEEK_API_KEY}
-      model: deepseek-chat
+      model: deepseek-v4-pro
     openai:
       type: openai
       api_key: ${OPENAI_API_KEY}
