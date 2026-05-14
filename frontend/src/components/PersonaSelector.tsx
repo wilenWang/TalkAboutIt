@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function PersonaSelector({ selected, onChange }: Props) {
-  const { t } = useLanguage();
+  const { t, f } = useLanguage();
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -47,7 +47,7 @@ export default function PersonaSelector({ selected, onChange }: Props) {
   if (loading) {
     return (
       <div className="w-[260px] bg-[#f6f5f4] border-r border-black/[0.06] flex flex-col h-full">
-        <div className="p-4 text-sm text-[#a39e98]">{t('加载中...', 'Loading...')}</div>
+        <div className="p-4 text-sm text-[#a39e98]">{t('loading')}</div>
       </div>
     );
   }
@@ -55,14 +55,14 @@ export default function PersonaSelector({ selected, onChange }: Props) {
   return (
     <div className="w-[260px] bg-[#f6f5f4] border-r border-black/[0.06] flex flex-col h-full overflow-hidden">
       <div className="px-4 pt-4 pb-2 text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-        {t('参与者', 'Participants')}
+        {t('participants')}
       </div>
       <div className="px-4 pb-3">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('搜索...', 'Search...')}
+          placeholder={t('search')}
           className="w-full px-2.5 py-2 border border-black/10 rounded text-sm bg-white text-black/95 outline-none focus:border-[#0075de] transition-colors"
         />
       </div>
@@ -95,8 +95,8 @@ export default function PersonaSelector({ selected, onChange }: Props) {
       <div className="p-2 border-t border-black/[0.06]">
         <div className="text-[11px] text-[#a39e98] text-center py-1">
           {selected.length >= 2
-            ? t(`已选择 ${selected.length} 人`, `${selected.length} selected`)
-            : t('请选择 2-4 位参与者', 'Select 2-4 participants')}
+            ? f('selectedCount', { n: selected.length })
+            : t('selectParticipants')}
         </div>
       </div>
     </div>

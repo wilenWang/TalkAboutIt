@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
-  const { language, t } = useLanguage();
+  const { t, f } = useLanguage();
   const [topic, setTopic] = useState('');
   const [messages, setMessages] = useState<ReplayMessage[]>([]);
   const [participants, setParticipants] = useState<string[]>([]);
@@ -42,7 +42,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
         setLoading(false);
       })
       .catch((e) => {
-        setError(e instanceof Error ? e.message : t('加载回放失败', 'Failed to load replay'));
+        setError(e instanceof Error ? t(e.message) : t('replayFailed'));
         setLoading(false);
       });
   }, [id, personaList, t]);
@@ -65,18 +65,18 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
   const getPersonaNames = (ids: string[]) =>
     ids
       .map((personaId) => personaList.find((p) => p.id === personaId)?.name ?? personaId)
-      .join(language === 'en-US' ? ', ' : '、');
+      .join(t('participantsSeparator'));
 
   const formatStatus = (value: string) => {
     switch (value) {
       case 'pending':
-        return t('待开始', 'Pending');
+        return t('statusPending');
       case 'running':
-        return t('进行中', 'Running');
+        return t('statusRunning');
       case 'completed':
-        return t('已完成', 'Completed');
+        return t('statusCompleted');
       case 'failed':
-        return t('失败', 'Failed');
+        return t('statusFailed');
       default:
         return value;
     }
@@ -92,10 +92,10 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
           onClick={onBack}
           className="text-sm text-[#615d59] hover:text-black/95 transition-colors"
         >
-          ← {t('返回列表', 'Back to list')}
+          ← {t('backToList')}
         </button>
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('回放', 'Replay')}</span>
+        <span className="text-[13px] text-[#a39e98]">{t('replay')}</span>
       </header>
 
       <main className="max-w-[720px] mx-auto px-6 py-8">
@@ -136,12 +136,12 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
                     });
                     setMessages(mapped);
                   })
-                  .catch((e) => setError(e instanceof Error ? e.message : t('加载回放失败', 'Failed to load replay')))
+                  .catch((e) => setError(e instanceof Error ? t(e.message) : t('replayFailed')))
                   .finally(() => setLoading(false));
               }}
               className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              {t('重试', 'Retry')}
+              {t('retry')}
             </button>
           </div>
         )}
@@ -150,27 +150,27 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
         {!loading && !error && (
           <>
             <div className="mb-6">
-              <h2 className="text-[22px] font-bold tracking-tight mb-1">{topic || t('讨论回放', 'Replay')}</h2>
+              <h2 className="text-[22px] font-bold tracking-tight mb-1">{topic || t('discussionReplay')}</h2>
               <p className="text-sm text-[#615d59]">
-                {t(`参与者：${formatParticipants()}`, `Participants: ${formatParticipants()}`)}
+                {f('participantsLabelF', { names: formatParticipants() })}
               </p>
               <p className="text-sm text-[#615d59]">
-                {t(`状态：${formatStatus(status)}`, `Status: ${formatStatus(status)}`)}
+                {f('statusLabel', { s: formatStatus(status) })}
               </p>
               <p className="text-sm text-[#615d59]">
-                {t(`共 ${messages.length} 条消息 · ${grouped.length} 轮`, `${messages.length} messages · ${grouped.length} rounds`)}
+                {f('summaryLine', { msg: messages.length, rnd: grouped.length })}
               </p>
             </div>
 
             {messages.length === 0 && (
               <div className="text-center py-16 text-[#a39e98]">
                 <div className="text-5xl mb-3">📭</div>
-                <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('该讨论暂无消息记录', 'No messages in this discussion')}</h3>
+                <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('noMessagesInDiscussion')}</h3>
                 <button
                   onClick={onBack}
                   className="mt-4 px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
                 >
-                  {t('返回列表', 'Back to list')}
+                  {t('backToList')}
                 </button>
               </div>
             )}
@@ -180,7 +180,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-px flex-1 bg-black/[0.06]" />
                   <span className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-                    {t(`第 ${g.round} 轮`, `Round ${g.round}`)}
+                    {f('roundLabel', { n: g.round })}
                   </span>
                   <div className="h-px flex-1 bg-black/[0.06]" />
                 </div>

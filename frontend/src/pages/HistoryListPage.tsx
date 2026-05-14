@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function HistoryListPage({ personaList, onSelect, onBack }: Props) {
-  const { language, t } = useLanguage();
+  const { language, t, f } = useLanguage();
   const [items, setItems] = useState<RoundtableListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
         setLoading(false);
       })
       .catch((e) => {
-        setError(e instanceof Error ? e.message : t('加载失败', 'Failed to load'));
+        setError(e instanceof Error ? t(e.message) : t('loadFailed'));
         setLoading(false);
       });
   }, [t]);
@@ -40,7 +40,7 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
   const getPersonaNames = (ids: string[]) => {
     return ids
       .map((id) => personaList.find((p) => p.id === id)?.name ?? id)
-      .join(language === 'en-US' ? ', ' : '、');
+      .join(t('participantsSeparator'));
   };
 
   return (
@@ -51,15 +51,15 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
           onClick={onBack}
           className="text-sm text-[#615d59] hover:text-black/95 transition-colors"
         >
-          ← {t('返回', 'Back')}
+          ← {t('back')}
         </button>
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('历史记录', 'History')}</span>
+        <span className="text-[13px] text-[#a39e98]">{t('history')}</span>
       </header>
 
       <main className="max-w-[720px] mx-auto px-6 py-8">
-        <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('历史记录', 'History')}</h2>
-        <p className="text-sm text-[#615d59] mb-6">{t('回顾已完成的圆桌讨论', 'Review completed roundtable discussions')}</p>
+        <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('history')}</h2>
+        <p className="text-sm text-[#615d59] mb-6">{t('historySubtitle')}</p>
 
         {/* 加载态 */}
         {loading && (
@@ -84,12 +84,12 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
                 setError(null);
                 listRoundtables('completed')
                   .then(setItems)
-                  .catch((e) => setError(e instanceof Error ? e.message : t('加载失败', 'Failed to load')))
+                  .catch((e) => setError(e instanceof Error ? t(e.message) : t('loadFailed')))
                   .finally(() => setLoading(false));
               }}
               className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              {t('重试', 'Retry')}
+              {t('retry')}
             </button>
           </div>
         )}
@@ -98,13 +98,13 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16 text-[#a39e98]">
             <div className="text-5xl mb-3">📜</div>
-            <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('暂无历史记录', 'No history yet')}</h3>
-            <p className="text-sm mb-4">{t('去开始一场讨论吧', 'Start a discussion')}</p>
+            <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('noHistory')}</h3>
+            <p className="text-sm mb-4">{t('startDiscussionCta')}</p>
             <button
               onClick={onBack}
               className="px-4 py-2 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              {t('返回', 'Back')}
+              {t('back')}
             </button>
           </div>
         )}
@@ -122,12 +122,12 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-black/95 truncate mb-1">{item.topic}</h3>
                     <p className="text-[13px] text-[#615d59] truncate">
-                      {t('参与者：', 'Participants: ')}{getPersonaNames(item.personas)}
+                      {t('participantsLabel')}{getPersonaNames(item.personas)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="bg-[#f2f9ff] text-[#097fe8] text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                      {t(`${item.max_rounds} 轮`, `${item.max_rounds} rounds`)}
+                      {f('roundCount', { n: item.max_rounds })}
                     </span>
                     <span className="text-[11px] text-[#a39e98]">{formatDate(item.created_at)}</span>
                   </div>

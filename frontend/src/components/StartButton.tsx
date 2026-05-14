@@ -23,7 +23,7 @@ export default function StartButton({ disabled, loading, onClick, hint }: Props)
           }
         `}
       >
-        {loading ? t('准备中...', 'Preparing...') : `✦ ${t('开始讨论', 'Start Discussion')}`}
+        {loading ? t('preparing') : `✦ ${t('startDiscussion')}`}
       </button>
       {hint && (
         <span className="text-[11px] text-[#a39e98]">{hint}</span>

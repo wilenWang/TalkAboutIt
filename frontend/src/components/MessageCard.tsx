@@ -1,3 +1,5 @@
+import { useLanguage } from '../i18n/LanguageContext';
+
 interface Props {
   avatar: string;
   author: string;
@@ -147,6 +149,7 @@ function parseInline(text: string): React.ReactNode[] {
 }
 
 export default function MessageCard({ avatar, author, round, content, isEven }: Props) {
+  const { f } = useLanguage();
   return (
     <div
       className={`
@@ -157,7 +160,7 @@ export default function MessageCard({ avatar, author, round, content, isEven }: 
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-lg leading-none">{avatar}</span>
         <span className="text-[13px] font-semibold">{author}</span>
-        <span className="text-[11px] text-[#a39e98]">第 {round} 轮</span>
+        <span className="text-[11px] text-[#a39e98]">{f('roundLabel', { n: round })}</span>
       </div>
       <div className="text-sm leading-relaxed text-[#615d59]">{renderMarkdown(content)}</div>
     </div>

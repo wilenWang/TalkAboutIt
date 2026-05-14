@@ -12,7 +12,7 @@ export interface RoundtableListItem {
 
 export async function fetchPersonas(): Promise<import('../types').PersonaSummary[]> {
   const res = await fetch(`${BASE}/api/v1/personas`);
-  if (!res.ok) throw new Error('加载 persona 失败');
+  if (!res.ok) throw new Error('fetchPersonasFailed');
   return res.json();
 }
 
@@ -27,13 +27,13 @@ export async function createRoundtable(body: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('创建讨论失败');
+  if (!res.ok) throw new Error('createDiscussionFailed');
   return res.json();
 }
 
 export async function startRoundtable(id: string): Promise<{ id: string; status: string }> {
   const res = await fetch(`${BASE}/api/v1/roundtables/${id}/start`, { method: 'POST' });
-  if (!res.ok) throw new Error('启动讨论失败');
+  if (!res.ok) throw new Error('startDiscussionFailed');
   return res.json();
 }
 
@@ -41,7 +41,7 @@ export async function startRoundtable(id: string): Promise<{ id: string; status:
 export async function listRoundtables(status?: string): Promise<RoundtableListItem[]> {
   const qs = status ? `?status=${encodeURIComponent(status)}` : '';
   const res = await fetch(`${BASE}/api/v1/roundtables${qs}`);
-  if (!res.ok) throw new Error('获取讨论列表失败');
+  if (!res.ok) throw new Error('listDiscussionsFailed');
   return res.json();
 }
 
@@ -69,6 +69,6 @@ export async function getRoundtable(id: string): Promise<{
   }[];
 }> {
   const res = await fetch(`${BASE}/api/v1/roundtables/${id}`);
-  if (!res.ok) throw new Error('获取讨论快照失败');
+  if (!res.ok) throw new Error('getSnapshotFailed');
   return res.json();
 }

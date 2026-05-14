@@ -15,7 +15,7 @@ export default function LanguageToggle({ value, onChange }: Props) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-        {t('语言', 'Language')}
+        {t('language')}
       </label>
       <div className="flex gap-1">
         {options.map((opt) => (
