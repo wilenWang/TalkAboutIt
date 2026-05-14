@@ -23,7 +23,7 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
         setLoading(false);
       })
       .catch((e) => {
-        setError(e instanceof Error ? t(e.message) : t('loadFailed'));
+        setError(e instanceof Error ? t(e.message) : t('errLoadFailed'));
         setLoading(false);
       });
   }, [t]);
@@ -40,7 +40,7 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
   const getPersonaNames = (ids: string[]) => {
     return ids
       .map((id) => personaList.find((p) => p.id === id)?.name ?? id)
-      .join(t('participantsSeparator'));
+      .join(t('sepParticipants'));
   };
 
   return (
@@ -51,15 +51,15 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
           onClick={onBack}
           className="text-sm text-[#615d59] hover:text-black/95 transition-colors"
         >
-          ← {t('back')}
+          ← {t('actionBack')}
         </button>
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('history')}</span>
+        <span className="text-[13px] text-[#a39e98]">{t('pageHistory')}</span>
       </header>
 
       <main className="max-w-[720px] mx-auto px-6 py-8">
-        <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('history')}</h2>
-        <p className="text-sm text-[#615d59] mb-6">{t('historySubtitle')}</p>
+        <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('pageHistory')}</h2>
+        <p className="text-sm text-[#615d59] mb-6">{t('msgHistorySubtitle')}</p>
 
         {/* 加载态 */}
         {loading && (
@@ -84,12 +84,12 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
                 setError(null);
                 listRoundtables('completed')
                   .then(setItems)
-                  .catch((e) => setError(e instanceof Error ? t(e.message) : t('loadFailed')))
+                  .catch((e) => setError(e instanceof Error ? t(e.message) : t('errLoadFailed')))
                   .finally(() => setLoading(false));
               }}
               className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              {t('retry')}
+              {t('actionRetry')}
             </button>
           </div>
         )}
@@ -98,13 +98,13 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16 text-[#a39e98]">
             <div className="text-5xl mb-3">📜</div>
-            <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('noHistory')}</h3>
-            <p className="text-sm mb-4">{t('startDiscussionCta')}</p>
+            <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('msgNoHistory')}</h3>
+            <p className="text-sm mb-4">{t('msgStartDiscussionCta')}</p>
             <button
               onClick={onBack}
               className="px-4 py-2 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              {t('back')}
+              {t('actionBack')}
             </button>
           </div>
         )}
@@ -122,12 +122,12 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-black/95 truncate mb-1">{item.topic}</h3>
                     <p className="text-[13px] text-[#615d59] truncate">
-                      {t('participantsLabel')}{getPersonaNames(item.personas)}
+                      {t('labelParticipantsF')}{getPersonaNames(item.personas)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="bg-[#f2f9ff] text-[#097fe8] text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                      {f('roundCount', { n: item.max_rounds })}
+                      {f('fmtRoundCount', { n: item.max_rounds })}
                     </span>
                     <span className="text-[11px] text-[#a39e98]">{formatDate(item.created_at)}</span>
                   </div>

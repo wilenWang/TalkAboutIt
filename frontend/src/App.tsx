@@ -281,7 +281,7 @@ export default function App() {
         setStatus('idle');
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('snapshotFailed'));
+      setError(e instanceof Error ? e.message : t('errSnapshotFailed'));
     }
   };
 
@@ -330,27 +330,27 @@ export default function App() {
 
       await startRoundtable(rt.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('unknownError'));
+      setError(e instanceof Error ? e.message : t('errUnknown'));
       setStatus('idle');
     }
   };
 
   const canStart = selectedPersonas.length >= 2 && topic.trim().length > 0 && status === 'idle';
-  const startHint = selectedPersonas.length < 2 ? t('minParticipants') : undefined;
+  const startHint = selectedPersonas.length < 2 ? t('msgMinParticipants') : undefined;
 
   // 连接状态提示文案
   const connectionBadge = () => {
     if (sseStatus === 'reconnecting') {
-      return <span className="text-xs text-orange-500 font-medium animate-pulse">↻ {t('reconnecting')}</span>;
+      return <span className="text-xs text-orange-500 font-medium animate-pulse">↻ {t('statusReconnecting')}</span>;
     }
     if (sseStatus === 'connecting') {
-      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● {t('connecting')}</span>;
+      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● {t('statusConnecting')}</span>;
     }
     if (sseStatus === 'disconnected') {
-      return <span className="text-xs text-red-500 font-medium">✗ {t('disconnected')}</span>;
+      return <span className="text-xs text-red-500 font-medium">✗ {t('statusDisconnected')}</span>;
     }
     if (status === 'streaming') {
-      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● {t('inProgress')}</span>;
+      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● {t('statusInProgress')}</span>;
     }
     if (status === 'completed') {
       return <span className="text-xs text-green-600 font-medium">✓ {t('statusCompleted')}</span>;
@@ -394,7 +394,7 @@ export default function App() {
       {/* Header */}
       <header className="px-6 py-3 flex items-center gap-3 border-b border-black/[0.06]">
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('roundtable')}</span>
+        <span className="text-[13px] text-[#a39e98]">{t('pageRoundtable')}</span>
         <span className="flex-1" />
         <div className="relative" ref={languageMenuRef}>
           <button
@@ -431,7 +431,7 @@ export default function App() {
           onClick={() => setPage('history')}
           className="text-[13px] text-[#615d59] hover:text-black/95 transition-colors"
         >
-          {t('history')}
+          {t('pageHistory')}
         </button>
         {connectionBadge()}
       </header>
@@ -441,9 +441,9 @@ export default function App() {
         <PersonaSelector selected={selectedPersonas} onChange={setSelectedPersonas} />
 
         <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-8 max-w-[900px]">
-          <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('roundtable')}</h2>
+          <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('pageRoundtable')}</h2>
           <p className="text-sm text-[#615d59] mb-6">
-            {t('discussionSubtitle')}
+            {t('msgDiscussionSubtitle')}
           </p>
 
           {/* Controls */}
@@ -477,7 +477,7 @@ export default function App() {
                   }}
                   className="text-sm text-[#0075de] hover:underline"
                 >
-                  {t('retry')}
+                  {t('actionRetry')}
                 </button>
               </div>
             )}
@@ -486,12 +486,12 @@ export default function App() {
           {/* 断连态提示 */}
           {sseStatus === 'disconnected' && status === 'streaming' && (
             <div className="mb-4 bg-red-50 border border-red-100 rounded-lg px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-red-600">{t('connectionLost')}</span>
+              <span className="text-sm text-red-600">{t('statusConnectionLost')}</span>
               <button
                 onClick={() => reconnectSSE()}
                 className="text-sm font-semibold text-red-600 hover:text-red-700"
               >
-                {t('reconnectManually')}
+                {t('statusReconnectManually')}
               </button>
             </div>
           )}
@@ -513,7 +513,7 @@ export default function App() {
                 }}
                 className="px-5 py-2 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
               >
-                {t('viewReplay')}
+                {t('actionViewReplay')}
               </button>
             </div>
           )}

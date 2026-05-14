@@ -42,7 +42,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
         setLoading(false);
       })
       .catch((e) => {
-        setError(e instanceof Error ? t(e.message) : t('replayFailed'));
+        setError(e instanceof Error ? t(e.message) : t('errReplayFailed'));
         setLoading(false);
       });
   }, [id, personaList, t]);
@@ -65,7 +65,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
   const getPersonaNames = (ids: string[]) =>
     ids
       .map((personaId) => personaList.find((p) => p.id === personaId)?.name ?? personaId)
-      .join(t('participantsSeparator'));
+      .join(t('sepParticipants'));
 
   const formatStatus = (value: string) => {
     switch (value) {
@@ -92,10 +92,10 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
           onClick={onBack}
           className="text-sm text-[#615d59] hover:text-black/95 transition-colors"
         >
-          ← {t('backToList')}
+          ← {t('actionBackToList')}
         </button>
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('replay')}</span>
+        <span className="text-[13px] text-[#a39e98]">{t('pageReplay')}</span>
       </header>
 
       <main className="max-w-[720px] mx-auto px-6 py-8">
@@ -136,12 +136,12 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
                     });
                     setMessages(mapped);
                   })
-                  .catch((e) => setError(e instanceof Error ? t(e.message) : t('replayFailed')))
+                  .catch((e) => setError(e instanceof Error ? t(e.message) : t('errReplayFailed')))
                   .finally(() => setLoading(false));
               }}
               className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              {t('retry')}
+              {t('actionRetry')}
             </button>
           </div>
         )}
@@ -152,25 +152,25 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
             <div className="mb-6">
               <h2 className="text-[22px] font-bold tracking-tight mb-1">{topic || t('discussionReplay')}</h2>
               <p className="text-sm text-[#615d59]">
-                {f('participantsLabelF', { names: formatParticipants() })}
+                {f('fmtParticipantsLabel', { names: formatParticipants() })}
               </p>
               <p className="text-sm text-[#615d59]">
-                {f('statusLabel', { s: formatStatus(status) })}
+                {f('fmtStatusLabel', { s: formatStatus(status) })}
               </p>
               <p className="text-sm text-[#615d59]">
-                {f('summaryLine', { msg: messages.length, rnd: grouped.length })}
+                {f('fmtSummaryLine', { msg: messages.length, rnd: grouped.length })}
               </p>
             </div>
 
             {messages.length === 0 && (
               <div className="text-center py-16 text-[#a39e98]">
                 <div className="text-5xl mb-3">📭</div>
-                <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('noMessagesInDiscussion')}</h3>
+                <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('msgNoMessagesInDiscussion')}</h3>
                 <button
                   onClick={onBack}
                   className="mt-4 px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
                 >
-                  {t('backToList')}
+                  {t('actionBackToList')}
                 </button>
               </div>
             )}
@@ -180,7 +180,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-px flex-1 bg-black/[0.06]" />
                   <span className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-                    {f('roundLabel', { n: g.round })}
+                    {f('fmtRoundLabel', { n: g.round })}
                   </span>
                   <div className="h-px flex-1 bg-black/[0.06]" />
                 </div>

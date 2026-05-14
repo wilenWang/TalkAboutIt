@@ -23,7 +23,7 @@ export default function StartButton({ disabled, loading, onClick, hint }: Props)
           }
         `}
       >
-        {loading ? t('preparing') : `✦ ${t('startDiscussion')}`}
+        {loading ? t('msgPreparing') : `✦ ${t('actionStart')}`}
       </button>
       {hint && (
         <span className="text-[11px] text-[#a39e98]">{hint}</span>

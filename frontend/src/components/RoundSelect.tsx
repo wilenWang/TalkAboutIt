@@ -11,7 +11,7 @@ export default function RoundSelect({ value, onChange }: Props) {
   return (
     <div className="flex flex-col gap-1" style={{ maxWidth: 120 }}>
       <label className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-        {t('rounds')}
+        {t('labelRounds')}
       </label>
       <select
         value={value}

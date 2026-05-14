@@ -26,10 +26,10 @@ export default function MessageStream({ messages, currentSpeaker }: Props) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-[22px] font-bold tracking-tight">{t('discussion')}</h2>
+        <h2 className="text-[22px] font-bold tracking-tight">{t('labelDiscussion')}</h2>
         {messages.length > 0 && (
           <span className="bg-[#f2f9ff] text-[#097fe8] text-xs font-semibold px-2.5 py-0.5 rounded-full">
-            {f('messageCount', { n: messages.length })}
+            {f('fmtMessageCount', { n: messages.length })}
           </span>
         )}
       </div>
@@ -37,8 +37,8 @@ export default function MessageStream({ messages, currentSpeaker }: Props) {
       {grouped.length === 0 && !currentSpeaker && (
         <div className="text-center py-16 text-[#a39e98]">
           <div className="text-5xl mb-3">💬</div>
-          <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('noMessages')}</h3>
-          <p className="text-sm">{t('notStarted')}</p>
+          <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('msgNoMessages')}</h3>
+          <p className="text-sm">{t('msgNotStarted')}</p>
         </div>
       )}
 
@@ -57,7 +57,7 @@ export default function MessageStream({ messages, currentSpeaker }: Props) {
         <div className="flex items-center gap-2 px-4 py-3 text-[13px] text-[#a39e98]">
           <span className="text-lg">{currentSpeaker.avatar}</span>
           <span className="font-semibold">{currentSpeaker.name}</span>
-          <span>{t('typing')}</span>
+          <span>{t('labelTyping')}</span>
           <span className="flex gap-1 ml-1">
             <span className="w-1 h-1 rounded-full bg-[#a39e98] animate-bounce" style={{ animationDelay: '0ms' }} />
             <span className="w-1 h-1 rounded-full bg-[#a39e98] animate-bounce" style={{ animationDelay: '200ms' }} />

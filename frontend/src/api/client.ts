@@ -12,7 +12,7 @@ export interface RoundtableListItem {
 
 export async function fetchPersonas(): Promise<import('../types').PersonaSummary[]> {
   const res = await fetch(`${BASE}/api/v1/personas`);
-  if (!res.ok) throw new Error('fetchPersonasFailed');
+  if (!res.ok) throw new Error('errFetchPersonas');
   return res.json();
 }
 
@@ -27,13 +27,13 @@ export async function createRoundtable(body: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('createDiscussionFailed');
+  if (!res.ok) throw new Error('errCreateDiscussion');
   return res.json();
 }
 
 export async function startRoundtable(id: string): Promise<{ id: string; status: string }> {
   const res = await fetch(`${BASE}/api/v1/roundtables/${id}/start`, { method: 'POST' });
-  if (!res.ok) throw new Error('startDiscussionFailed');
+  if (!res.ok) throw new Error('errStartDiscussion');
   return res.json();
 }
 
@@ -41,7 +41,7 @@ export async function startRoundtable(id: string): Promise<{ id: string; status:
 export async function listRoundtables(status?: string): Promise<RoundtableListItem[]> {
   const qs = status ? `?status=${encodeURIComponent(status)}` : '';
   const res = await fetch(`${BASE}/api/v1/roundtables${qs}`);
-  if (!res.ok) throw new Error('listDiscussionsFailed');
+  if (!res.ok) throw new Error('errListDiscussions');
   return res.json();
 }
 
@@ -69,6 +69,6 @@ export async function getRoundtable(id: string): Promise<{
   }[];
 }> {
   const res = await fetch(`${BASE}/api/v1/roundtables/${id}`);
-  if (!res.ok) throw new Error('getSnapshotFailed');
+  if (!res.ok) throw new Error('errGetSnapshot');
   return res.json();
 }

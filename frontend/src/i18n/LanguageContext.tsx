@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { translations, type TranslationKey } from './translations';
+import { translations, type TranslationKey, type FormatParams } from './translations';
 
 export type SystemLanguage = 'zh-CN' | 'en-US';
 
@@ -16,8 +16,8 @@ export interface LanguageContextType {
   setLanguage: (lang: SystemLanguage) => void;
   /** Key-based translation. Accepts a typed key or freeform string (for error messages, etc). */
   t: (key: TranslationKey | string) => string;
-  /** Format a pattern translation with dynamic values. Example: f('roundCount', { n: 3 }) */
-  f: (key: TranslationKey, params: Record<string, string | number>) => string;
+  /** Format a pattern translation with type-checked dynamic values. */
+  f: <K extends keyof FormatParams>(key: K, params: FormatParams[K]) => string;
 }
 
 const STORAGE_KEY = 'talkaboutit.system-language';
@@ -29,7 +29,7 @@ function getInitialLanguage(): SystemLanguage {
     return 'zh-CN';
   }
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === 'en-US' ? 'en-US' : 'zh-CN';
+  return stored === 'en-US' || stored === 'zh-CN' ? stored : 'zh-CN';
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
@@ -44,17 +44,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     (key: TranslationKey | string): string => {
       const row = translations[key as TranslationKey];
       if (!row) return key;
-      return language === 'en-US' ? row.en : row.zh;
+      return row[language] ?? key;
     },
     [language]
   );
 
   /** Format a pattern translation. Replaces {param} placeholders. */
   const f = useCallback(
-    (key: TranslationKey, params: Record<string, string | number>): string => {
-      const row = translations[key];
-      const template = row ? (language === 'en-US' ? row.en : row.zh) : key;
-      return template.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`));
+    <K extends keyof FormatParams>(key: K, params: FormatParams[K]): string => {
+      const row = translations[key as unknown as TranslationKey];
+      const template = row ? (row[language] ?? key) : key;
+      return template.replace(/\{(\w+)\}/g, (_, k) => String((params as Record<string, unknown>)[k] ?? `{${k}}`));
     },
     [language]
   );
