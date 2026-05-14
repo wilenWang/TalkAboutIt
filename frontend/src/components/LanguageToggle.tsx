@@ -1,10 +1,13 @@
+import { useLanguage, type SystemLanguage } from '../i18n/LanguageContext';
+
 interface Props {
-  value: 'zh-CN' | 'en-US';
-  onChange: (value: 'zh-CN' | 'en-US') => void;
+  value: SystemLanguage;
+  onChange: (value: SystemLanguage) => void;
 }
 
 export default function LanguageToggle({ value, onChange }: Props) {
-  const options: { value: 'zh-CN' | 'en-US'; label: string; flag: string }[] = [
+  const { t } = useLanguage();
+  const options: { value: SystemLanguage; label: string; flag: string }[] = [
     { value: 'zh-CN', label: '中文', flag: '🇨🇳' },
     { value: 'en-US', label: 'English', flag: '🇺🇸' },
   ];
@@ -12,7 +15,7 @@ export default function LanguageToggle({ value, onChange }: Props) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-        语言
+        {t('语言', 'Language')}
       </label>
       <div className="flex gap-1">
         {options.map((opt) => (

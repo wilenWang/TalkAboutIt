@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { listRoundtables } from '../api/client';
 import type { RoundtableListItem } from '../api/client';
 import type { PersonaSummary } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface Props {
   personaList: PersonaSummary[];
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function HistoryListPage({ personaList, onSelect, onBack }: Props) {
+  const { language, t } = useLanguage();
   const [items, setItems] = useState<RoundtableListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,15 +23,15 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
         setLoading(false);
       })
       .catch((e) => {
-        setError(e instanceof Error ? e.message : '加载失败');
+        setError(e instanceof Error ? e.message : t('加载失败', 'Failed to load'));
         setLoading(false);
       });
-  }, []);
+  }, [t]);
 
   const formatDate = (s: string) => {
     try {
       const d = new Date(s);
-      return d.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch {
       return s;
     }
@@ -38,7 +40,7 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
   const getPersonaNames = (ids: string[]) => {
     return ids
       .map((id) => personaList.find((p) => p.id === id)?.name ?? id)
-      .join('、');
+      .join(language === 'en-US' ? ', ' : '、');
   };
 
   return (
@@ -49,15 +51,15 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
           onClick={onBack}
           className="text-sm text-[#615d59] hover:text-black/95 transition-colors"
         >
-          ← 返回首页
+          ← {t('返回', 'Back')}
         </button>
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">历史记录</span>
+        <span className="text-[13px] text-[#a39e98]">{t('历史记录', 'History')}</span>
       </header>
 
       <main className="max-w-[720px] mx-auto px-6 py-8">
-        <h2 className="text-[22px] font-bold tracking-tight mb-1">讨论历史</h2>
-        <p className="text-sm text-[#615d59] mb-6">回顾已完成的圆桌讨论</p>
+        <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('历史记录', 'History')}</h2>
+        <p className="text-sm text-[#615d59] mb-6">{t('回顾已完成的圆桌讨论', 'Review completed roundtable discussions')}</p>
 
         {/* 加载态 */}
         {loading && (
@@ -82,12 +84,12 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
                 setError(null);
                 listRoundtables('completed')
                   .then(setItems)
-                  .catch((e) => setError(e instanceof Error ? e.message : '加载失败'))
+                  .catch((e) => setError(e instanceof Error ? e.message : t('加载失败', 'Failed to load')))
                   .finally(() => setLoading(false));
               }}
               className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              重试
+              {t('重试', 'Retry')}
             </button>
           </div>
         )}
@@ -96,13 +98,13 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16 text-[#a39e98]">
             <div className="text-5xl mb-3">📜</div>
-            <h3 className="text-lg font-semibold text-[#615d59] mb-1">暂无讨论记录</h3>
-            <p className="text-sm mb-4">去开始一场讨论吧</p>
+            <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('暂无历史记录', 'No history yet')}</h3>
+            <p className="text-sm mb-4">{t('去开始一场讨论吧', 'Start a discussion')}</p>
             <button
               onClick={onBack}
               className="px-4 py-2 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
             >
-              开始讨论
+              {t('返回', 'Back')}
             </button>
           </div>
         )}
@@ -120,12 +122,12 @@ export default function HistoryListPage({ personaList, onSelect, onBack }: Props
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-black/95 truncate mb-1">{item.topic}</h3>
                     <p className="text-[13px] text-[#615d59] truncate">
-                      参与者：{getPersonaNames(item.personas)}
+                      {t('参与者：', 'Participants: ')}{getPersonaNames(item.personas)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="bg-[#f2f9ff] text-[#097fe8] text-[11px] font-semibold px-2 py-0.5 rounded-full">
-                      {item.max_rounds} 轮
+                      {t(`${item.max_rounds} 轮`, `${item.max_rounds} rounds`)}
                     </span>
                     <span className="text-[11px] text-[#a39e98]">{formatDate(item.created_at)}</span>
                   </div>

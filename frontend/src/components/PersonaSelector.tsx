@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchPersonas } from '../api/client';
 import type { PersonaSummary } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface Props {
   selected: string[];
@@ -8,8 +9,10 @@ interface Props {
 }
 
 export default function PersonaSelector({ selected, onChange }: Props) {
+  const { t } = useLanguage();
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchPersonas()
@@ -26,10 +29,25 @@ export default function PersonaSelector({ selected, onChange }: Props) {
     }
   };
 
+  const filteredPersonas = personas.filter((persona) => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return true;
+    const haystack = [
+      persona.name,
+      persona.display_name,
+      persona.role_title,
+      persona.description,
+      ...persona.tags,
+    ]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(keyword);
+  });
+
   if (loading) {
     return (
       <div className="w-[260px] bg-[#f6f5f4] border-r border-black/[0.06] flex flex-col h-full">
-        <div className="p-4 text-sm text-[#a39e98]">加载中...</div>
+        <div className="p-4 text-sm text-[#a39e98]">{t('加载中...', 'Loading...')}</div>
       </div>
     );
   }
@@ -37,10 +55,19 @@ export default function PersonaSelector({ selected, onChange }: Props) {
   return (
     <div className="w-[260px] bg-[#f6f5f4] border-r border-black/[0.06] flex flex-col h-full overflow-hidden">
       <div className="px-4 pt-4 pb-2 text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-        选择参与者
+        {t('参与者', 'Participants')}
+      </div>
+      <div className="px-4 pb-3">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('搜索...', 'Search...')}
+          className="w-full px-2.5 py-2 border border-black/10 rounded text-sm bg-white text-black/95 outline-none focus:border-[#0075de] transition-colors"
+        />
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        {personas.map((p) => {
+        {filteredPersonas.map((p) => {
           const isSelected = selected.includes(p.id);
           return (
             <div
@@ -67,7 +94,9 @@ export default function PersonaSelector({ selected, onChange }: Props) {
       </div>
       <div className="p-2 border-t border-black/[0.06]">
         <div className="text-[11px] text-[#a39e98] text-center py-1">
-          已选 {selected.length} / 4 人
+          {selected.length >= 2
+            ? t(`已选择 ${selected.length} 人`, `${selected.length} selected`)
+            : t('请选择 2-4 位参与者', 'Select 2-4 participants')}
         </div>
       </div>
     </div>

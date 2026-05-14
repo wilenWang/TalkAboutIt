@@ -10,6 +10,7 @@ import { useSSE } from './hooks/useSSE';
 import type { PersonaSummary } from './types';
 import HistoryListPage from './pages/HistoryListPage';
 import HistoryDetailPage from './pages/HistoryDetailPage';
+import { useLanguage, type SystemLanguage } from './i18n/LanguageContext';
 
 type AppStatus = 'idle' | 'creating' | 'streaming' | 'completed';
 type Page = 'talk' | 'history' | 'history-detail';
@@ -30,26 +31,49 @@ function parsePageFromPath(): { page: Page; historyId: string | null } {
 }
 
 export default function App() {
+  const { language: systemLanguage, setLanguage: setSystemLanguage, t } = useLanguage();
   const initial = parsePageFromPath();
   const [page, setPage] = useState<Page>(initial.page);
   const [historyId, setHistoryId] = useState<string | null>(initial.historyId);
 
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
-  const [topic, setTopic] = useState('AI 会取代程序员吗？');
+  const [topic, setTopic] = useState(
+    systemLanguage === 'en-US' ? 'Will AI replace programmers?' : 'AI 会取代程序员吗？'
+  );
   const [rounds, setRounds] = useState(3);
-  const [language, setLanguage] = useState<'zh-CN' | 'en-US'>('zh-CN');
+  const [debateLanguage, setDebateLanguage] = useState<SystemLanguage>(systemLanguage);
+  const [hasCustomDebateLanguage, setHasCustomDebateLanguage] = useState(false);
   const [status, setStatus] = useState<AppStatus>('idle');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [currentSpeaker, setCurrentSpeaker] = useState<{ name: string; avatar: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   // 本地 persona 列表，用于快照恢复时匹配作者信息
   const [personaList, setPersonaList] = useState<PersonaSummary[]>([]);
 
   const messagesRef = useRef<StreamMessage[]>([]);
   const currentRoundRef = useRef(1);
   const rtIdRef = useRef<string | null>(null);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
   // 快照恢复后用于 SSE 首次连接的 last_event_id
   const resumeFromEventIdRef = useRef<string>('');
+
+  useEffect(() => {
+    if (!hasCustomDebateLanguage) {
+      setDebateLanguage(systemLanguage);
+    }
+  }, [systemLanguage, hasCustomDebateLanguage]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setLanguageMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // 加载本地 persona 列表
   useEffect(() => {
@@ -225,6 +249,10 @@ export default function App() {
       setTopic(snap.topic);
       setRounds(snap.max_rounds);
       setSelectedPersonas(snap.personas);
+      if (snap.language === 'zh-CN' || snap.language === 'en-US') {
+        setDebateLanguage(snap.language);
+        setHasCustomDebateLanguage(true);
+      }
 
       // 将历史消息转为 StreamMessage，并尝试从本地 personaList 匹配真实名字和头像
       const historyMsgs: StreamMessage[] = snap.messages.map((m) => {
@@ -253,7 +281,7 @@ export default function App() {
         setStatus('idle');
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载快照失败');
+      setError(e instanceof Error ? e.message : t('加载快照失败', 'Failed to load snapshot'));
     }
   };
 
@@ -290,7 +318,7 @@ export default function App() {
         topic,
         personas: selectedPersonas,
         max_rounds: rounds,
-        language: language,
+        language: debateLanguage,
       });
 
       rtIdRef.current = rt.id;
@@ -302,33 +330,40 @@ export default function App() {
 
       await startRoundtable(rt.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '未知错误');
+      setError(e instanceof Error ? e.message : t('未知错误', 'Unknown error'));
       setStatus('idle');
     }
   };
 
   const canStart = selectedPersonas.length >= 2 && topic.trim().length > 0 && status === 'idle';
-  const startHint = selectedPersonas.length < 2 ? '请至少选择 2 位参与者' : undefined;
+  const startHint = selectedPersonas.length < 2 ? t('请至少选择 2 位参与者', 'Select at least 2 participants') : undefined;
 
   // 连接状态提示文案
   const connectionBadge = () => {
     if (sseStatus === 'reconnecting') {
-      return <span className="text-xs text-orange-500 font-medium animate-pulse">↻ 重连中...</span>;
+      return <span className="text-xs text-orange-500 font-medium animate-pulse">↻ {t('重连中...', 'Reconnecting...')}</span>;
     }
     if (sseStatus === 'connecting') {
-      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● 连接中...</span>;
+      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● {t('连接中...', 'Connecting...')}</span>;
     }
     if (sseStatus === 'disconnected') {
-      return <span className="text-xs text-red-500 font-medium">✗ 已断开</span>;
+      return <span className="text-xs text-red-500 font-medium">✗ {t('已断开', 'Disconnected')}</span>;
     }
     if (status === 'streaming') {
-      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● 讨论进行中</span>;
+      return <span className="text-xs text-[#0075de] font-medium animate-pulse">● {t('讨论进行中', 'Discussion in progress')}</span>;
     }
     if (status === 'completed') {
-      return <span className="text-xs text-green-600 font-medium">✓ 已完成</span>;
+      return <span className="text-xs text-green-600 font-medium">✓ {t('已完成', 'Completed')}</span>;
     }
     return null;
   };
+
+  const systemLanguageOptions: { value: SystemLanguage; label: string; shortLabel: string; flag: string }[] = [
+    { value: 'zh-CN', label: '简体中文', shortLabel: '简体中文', flag: '🇨🇳' },
+    { value: 'en-US', label: 'English', shortLabel: 'English', flag: '🇺🇸' },
+  ];
+
+  const currentSystemLanguage = systemLanguageOptions.find((option) => option.value === systemLanguage)!;
 
   // 页面路由
   if (page === 'history') {
@@ -359,13 +394,44 @@ export default function App() {
       {/* Header */}
       <header className="px-6 py-3 flex items-center gap-3 border-b border-black/[0.06]">
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">圆桌讨论</span>
+        <span className="text-[13px] text-[#a39e98]">{t('圆桌讨论', 'Roundtable')}</span>
         <span className="flex-1" />
+        <div className="relative" ref={languageMenuRef}>
+          <button
+            type="button"
+            onClick={() => setLanguageMenuOpen((open) => !open)}
+            className="text-[13px] text-[#615d59] hover:text-black/95 transition-colors"
+          >
+            🌐 {currentSystemLanguage.shortLabel}
+          </button>
+          {languageMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 min-w-[168px] rounded-xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-black/[0.06] py-1 z-20">
+              {systemLanguageOptions.map((option) => {
+                const isActive = option.value === systemLanguage;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setSystemLanguage(option.value);
+                      setLanguageMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-[13px] transition-colors ${
+                      isActive ? 'bg-[#f2f9ff] text-[#0075de] font-semibold' : 'text-[#615d59] hover:bg-black/[0.03]'
+                    }`}
+                  >
+                    {option.flag} {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <button
           onClick={() => setPage('history')}
           className="text-[13px] text-[#615d59] hover:text-black/95 transition-colors"
         >
-          历史记录
+          {t('历史记录', 'History')}
         </button>
         {connectionBadge()}
       </header>
@@ -375,16 +441,22 @@ export default function App() {
         <PersonaSelector selected={selectedPersonas} onChange={setSelectedPersonas} />
 
         <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-8 max-w-[900px]">
-          <h2 className="text-[22px] font-bold tracking-tight mb-1">圆桌讨论</h2>
+          <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('圆桌讨论', 'Roundtable')}</h2>
           <p className="text-sm text-[#615d59] mb-6">
-            选择参与者，设定话题，观察 AI 人格之间的对话。
+            {t('选择参与者，设定话题，观察 AI 人格之间的对话。', 'Choose participants, set a topic, and observe the conversation between AI personas.')}
           </p>
 
           {/* Controls */}
           <div className="bg-white border border-black/10 rounded-xl p-5 mb-6 shadow-[rgba(0,0,0,0.04)_0px_4px_18px]">
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <TopicInput value={topic} onChange={setTopic} />
-              <LanguageToggle value={language} onChange={setLanguage} />
+              <LanguageToggle
+                value={debateLanguage}
+                onChange={(nextLanguage) => {
+                  setDebateLanguage(nextLanguage);
+                  setHasCustomDebateLanguage(true);
+                }}
+              />
               <RoundSelect value={rounds} onChange={setRounds} />
             </div>
             <div className="flex justify-end">
@@ -405,7 +477,7 @@ export default function App() {
                   }}
                   className="text-sm text-[#0075de] hover:underline"
                 >
-                  重试
+                  {t('重试', 'Retry')}
                 </button>
               </div>
             )}
@@ -414,12 +486,12 @@ export default function App() {
           {/* 断连态提示 */}
           {sseStatus === 'disconnected' && status === 'streaming' && (
             <div className="mb-4 bg-red-50 border border-red-100 rounded-lg px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-red-600">连接已断开，正在重连...</span>
+              <span className="text-sm text-red-600">{t('连接已断开，正在重连...', 'Connection lost, reconnecting...')}</span>
               <button
                 onClick={() => reconnectSSE()}
                 className="text-sm font-semibold text-red-600 hover:text-red-700"
               >
-                手动重连
+                {t('手动重连', 'Reconnect manually')}
               </button>
             </div>
           )}
@@ -441,7 +513,7 @@ export default function App() {
                 }}
                 className="px-5 py-2 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
               >
-                查看回放
+                {t('查看回放', 'View Replay')}
               </button>
             </div>
           )}

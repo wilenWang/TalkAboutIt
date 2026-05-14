@@ -1,3 +1,5 @@
+import { useLanguage } from '../i18n/LanguageContext';
+
 interface Props {
   disabled: boolean;
   loading: boolean;
@@ -6,6 +8,8 @@ interface Props {
 }
 
 export default function StartButton({ disabled, loading, onClick, hint }: Props) {
+  const { t } = useLanguage();
+
   return (
     <div className="flex flex-col items-end gap-1">
       <button
@@ -19,7 +23,7 @@ export default function StartButton({ disabled, loading, onClick, hint }: Props)
           }
         `}
       >
-        {loading ? '启动中...' : '✦ 开始讨论'}
+        {loading ? t('准备中...', 'Preparing...') : `✦ ${t('开始讨论', 'Start Discussion')}`}
       </button>
       {hint && (
         <span className="text-[11px] text-[#a39e98]">{hint}</span>

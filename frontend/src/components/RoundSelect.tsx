@@ -1,13 +1,17 @@
+import { useLanguage } from '../i18n/LanguageContext';
+
 interface Props {
   value: number;
   onChange: (value: number) => void;
 }
 
 export default function RoundSelect({ value, onChange }: Props) {
+  const { t } = useLanguage();
+
   return (
     <div className="flex flex-col gap-1" style={{ maxWidth: 120 }}>
       <label className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-        轮次
+        {t('轮次', 'Rounds')}
       </label>
       <select
         value={value}
