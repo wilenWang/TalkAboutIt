@@ -1,5 +1,5 @@
-# TalkAboutIt 后端配置示例
-# 复制为 config.yaml 后按需修改，敏感信息建议通过环境变量注入
+# TalkAboutIt 后端配置
+# API Key 通过环境变量注入，不在此文件中填写
 
 server:
   port: 8080
@@ -11,16 +11,16 @@ llm:
     deepseek:
       type: openai
       base_url: https://api.deepseek.com
-      api_key: ${DEEPSEEK_API_KEY}
       model: deepseek-v4-pro
+      # api_key 由 DEEPSEEK_API_KEY 环境变量注入
     openai:
       type: openai
-      api_key: ${OPENAI_API_KEY}
       model: gpt-4o
+      # api_key 由 OPENAI_API_KEY 环境变量注入
     claude:
       type: anthropic
-      api_key: ${ANTHROPIC_API_KEY}
       model: claude-sonnet-4-20250514
+      # api_key 由 ANTHROPIC_API_KEY 环境变量注入
 
 personas:
   dir: personas
