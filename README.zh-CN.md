@@ -1,90 +1,81 @@
-# TalkAboutIt — Multi-LLM Roundtable Discussion
+# TalkAboutIt — 多 LLM 名人圆桌辩论
 
-> Watch AI personas debate. Steve Jobs on design. Elon Musk on physics. Naval Ravikant on leverage. In one virtual roundtable.
+> 让 AI 名人同台辩论。Steve Jobs 谈设计品味，Elon Musk 谈物理约束，Naval Ravikant 谈长期复利。
 
-TalkAboutIt brings legendary thinkers back to life as AI personas, seating them around a virtual table to debate the topics you choose. Each persona maintains a distinct voice, beliefs, and debating style — and they actually listen to and respond to each other.
+TalkAboutIt 将传奇人物以 AI 人格的形式"复活"，让他们围坐在虚拟圆桌前，对你选定的话题展开多轮辩论。每个角色保持独特的声音、信念和辩论风格，并且会真正倾听和回应彼此。
 
-[📖 中文文档](README.zh-CN.md)
+[English](README.md)
 
-## ✨ Features
+## ✨ 功能特性
 
-- **5 built-in personas** — Steve Jobs, Elon Musk, Naval Ravikant, Zhang Xiaolong (WeChat), Zhang Yiming (ByteDance)
-- **Multi-round debates** — Personas reference each other's arguments and evolve their positions
-- **Per-persona conversation context** — Uses DeepSeek's automatic KV-cache for efficient multi-turn reasoning
-- **System-level i18n** — English & Simplified Chinese UI, debate language independently selectable
-- **Real-time streaming** — Watch the debate unfold via Server-Sent Events (SSE)
-- **History replay** — Browse and replay past debates
-- **Zero-cost caching** — DeepSeek Context Caching is enabled by default, no configuration needed
+- **5 个内置人物** — Steve Jobs、Elon Musk、Naval Ravikant、张小龙、张一鸣
+- **多轮辩论** — 人物互相引用、观点逐步演进
+- **按人物拆分对话上下文** — 利用 DeepSeek 自动 KV-Cache，跨轮次高效复用
+- **系统级国际化** — 英文 / 简体中文 UI，辩论语言独立可选
+- **实时流式输出** — 通过 SSE 实时观看辩论过程
+- **历史记录回放** — 浏览和回放过往辩论
+- **零成本缓存** — DeepSeek 上下文缓存默认开启，无需额外配置
 
-## 🚀 Quick Start
+## 🚀 快速启动
 
-### Prerequisites
+### 环境要求
 
 - **Go** 1.21+
 - **Node.js** 18+
-- **DeepSeek API Key** — [Get one free](https://platform.deepseek.com/api_keys)
+- **DeepSeek API Key** — [免费获取](https://platform.deepseek.com/api_keys)
 
-### One-Click
+### 一键启动
 
 ```bash
-# 1. Set your API key
 export DEEPSEEK_API_KEY=sk-your-key-here
-
-# 2. Start everything
 chmod +x start.sh && ./start.sh
 ```
 
-Then open **http://localhost:5173** and start a debate.
+浏览器打开 **http://localhost:5173**，即可开始辩论。
 
-### Manual
+### 手动启动
 
 ```bash
-# Terminal 1 — Backend
+# 终端 1 — 后端
 cd backend
 export DEEPSEEK_API_KEY=sk-your-key-here
 go run ./cmd/server
 
-# Terminal 2 — Frontend
+# 终端 2 — 前端
 cd frontend
 npm install
 npm run dev
 ```
 
-## ⚙️ Configuration
-
-Copy and edit the config:
+## ⚙️ 核心配置
 
 ```bash
 cp backend/config.example.yaml backend/config.yaml
 ```
 
-### Key settings
-
 ```yaml
 llm:
-  default: deepseek          # deepseek | openai | claude
+  default: deepseek          # 可选 deepseek | openai | claude
   providers:
     deepseek:
-      type: openai
       base_url: https://api.deepseek.com
       model: deepseek-v4-pro
-      # api_key is read from DEEPSEEK_API_KEY env var
 
 session:
-  max_rounds: 3              # 1-5 rounds per debate
+  max_rounds: 3              # 每场辩论 1-5 轮
 ```
 
-### Supported Providers
+### 支持的模型供应商
 
-| Provider | Env Variable | Model Example |
-|----------|-------------|---------------|
+| 供应商 | 环境变量 | 模型示例 |
+|--------|---------|---------|
 | DeepSeek | `DEEPSEEK_API_KEY` | `deepseek-v4-pro` |
 | OpenAI | `OPENAI_API_KEY` | `gpt-4o` |
 | Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-4-20250514` |
 
-> **Tip:** If no API key is set, TalkAboutIt falls back to mock mode — perfect for UI development.
+> 未设置 API Key 时自动降级为 mock 模式，适合前端开发调试。
 
-## 🏗 Architecture
+## 🏗 架构
 
 ```
 frontend (React + TypeScript + Vite)     backend (Go)
@@ -104,34 +95,34 @@ frontend (React + TypeScript + Vite)     backend (Go)
 └─────────────────────────────┘     └──────────────────────────┘
 ```
 
-## 📁 Project Structure
+## 📁 项目结构
 
 ```
 TalkAboutIt/
-├── backend/                   # Go API server
-│   ├── cmd/server/            # Entry point
+├── backend/                   # Go API 服务
+│   ├── cmd/server/            # 入口
 │   ├── internal/
 │   │   ├── api/               # HTTP handlers + SSE
-│   │   ├── config/            # YAML config loader
-│   │   ├── engine/            # Debate orchestrator
-│   │   ├── llm/               # Provider abstraction (OpenAI/Anthropic)
-│   │   ├── persona/           # Persona schema + conversation context
-│   │   └── session/           # SQLite persistence
-│   ├── personas/              # Persona JSON definitions
+│   │   ├── config/            # YAML 配置加载
+│   │   ├── engine/            # 辩论编排器
+│   │   ├── llm/               # Provider 抽象 (OpenAI/Anthropic)
+│   │   ├── persona/           # 人物 Schema + 对话上下文
+│   │   └── session/           # SQLite 持久化
+│   ├── personas/              # 人物 JSON 定义
 │   └── config.example.yaml
 ├── frontend/                  # React SPA
 │   └── src/
-│       ├── components/        # UI components
-│       ├── pages/             # Page-level components
-│       └── i18n/              # Language context
-├── docs/                      # Design documents
-├── start.sh                   # One-click startup
-└── .env.example               # Environment template
+│       ├── components/        # UI 组件
+│       ├── pages/             # 页面组件
+│       └── i18n/              # 语言上下文
+├── docs/                      # 设计文档
+├── start.sh                   # 一键启动
+└── .env.example               # 环境变量模板
 ```
 
-## 🔧 Adding a New Persona
+## 🔧 添加新人物
 
-Create a JSON file in `backend/personas/`:
+在 `backend/personas/` 下创建 JSON 文件：
 
 ```json
 {
@@ -140,7 +131,7 @@ Create a JSON file in `backend/personas/`:
   "display_name": "Alan Turing",
   "avatar": "⚙️",
   "role_title": "Mathematician, Computer Science Pioneer",
-  "description": "Father of theoretical computer science and AI...",
+  "description": "计算机科学和人工智能之父...",
   "language": { "primary": "en-US", "allowed": ["en-US", "zh-CN"] },
   "stance": { "default_position": "...", "intensity": 4, "biases": [...], "taboos": [...] },
   "core_beliefs": [
@@ -155,6 +146,6 @@ Create a JSON file in `backend/personas/`:
 }
 ```
 
-## 📄 License
+## 📄 开源协议
 
 MIT
