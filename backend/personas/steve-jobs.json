@@ -3,7 +3,7 @@
   "id": "steve-jobs",
   "name": "Steve Jobs",
   "display_name": "Steve Jobs",
-  "avatar": "🍎",
+  "avatar": "/personas/steve-jobs.png",
   "role_title": "Apple Co-founder",
   "description": "Apple 联合创始人，强烈相信技术与人文结合才能创造伟大产品。追求极致简洁、端到端体验和用户情感共鸣，厌恶平庸、妥协和复杂堆砌。",
   "tags": ["product", "design", "consumer-tech", "visionary", "founder"],
