@@ -3,6 +3,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/wilenwang/talkaboutit/internal/engine"
@@ -37,7 +38,7 @@ func NewHandler(loader *persona.Loader, store *session.Store, eng *engine.Engine
 func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Last-Event-ID")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -51,6 +52,9 @@ func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/personas", corsMiddleware(h.ListPersonas))
 	mux.HandleFunc("GET /api/v1/personas/{id}", corsMiddleware(h.GetPersona))
+	mux.HandleFunc("POST /api/v1/personas", corsMiddleware(h.CreatePersona))
+	mux.HandleFunc("PUT /api/v1/personas/{id}", corsMiddleware(h.UpdatePersona))
+	mux.HandleFunc("DELETE /api/v1/personas/{id}", corsMiddleware(h.DeletePersona))
 
 	mux.HandleFunc("POST /api/v1/roundtables", corsMiddleware(h.CreateRoundtable))
 	mux.HandleFunc("POST /api/v1/roundtables/{id}/start", corsMiddleware(h.StartRoundtable))
@@ -68,6 +72,7 @@ type PersonaSummary struct {
 	RoleTitle   string   `json:"role_title"`
 	Description string   `json:"description"`
 	Tags        []string `json:"tags"`
+	Archetype   string   `json:"archetype"`
 }
 
 // ListPersonas 返回所有预置 Persona 的摘要列表。
@@ -88,6 +93,7 @@ func (h *Handler) ListPersonas(w http.ResponseWriter, r *http.Request) {
 			RoleTitle:   p.RoleTitle,
 			Description: p.Description,
 			Tags:        p.Tags,
+			Archetype:   p.Archetype,
 		})
 	}
 
@@ -111,4 +117,75 @@ func (h *Handler) GetPersona(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(p)
+}
+
+// CreatePersona 创建新的 Persona。
+func (h *Handler) CreatePersona(w http.ResponseWriter, r *http.Request) {
+	var p persona.Persona
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, `{"error":"请求体解析失败"}`, http.StatusBadRequest)
+		return
+	}
+	if p.ID == "" {
+		http.Error(w, `{"error":"id 不能为空"}`, http.StatusBadRequest)
+		return
+	}
+	// 检查是否已存在
+	if _, err := h.loader.LoadOne(p.ID); err == nil {
+		http.Error(w, `{"error":"persona 已存在"}`, http.StatusConflict)
+		return
+	}
+	if err := h.loader.Save(p); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(p)
+}
+
+// UpdatePersona 更新已有 Persona。
+func (h *Handler) UpdatePersona(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"error":"缺少 persona ID"}`, http.StatusBadRequest)
+		return
+	}
+	var p persona.Persona
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, `{"error":"请求体解析失败"}`, http.StatusBadRequest)
+		return
+	}
+	if p.ID != id {
+		http.Error(w, `{"error":"URL ID 与请求体 ID 不一致"}`, http.StatusBadRequest)
+		return
+	}
+	if _, err := h.loader.LoadOne(id); err != nil {
+		http.Error(w, `{"error":"persona 不存在"}`, http.StatusNotFound)
+		return
+	}
+	if err := h.loader.Save(p); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(p)
+}
+
+// DeletePersona 删除指定 Persona。
+func (h *Handler) DeletePersona(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"error":"缺少 persona ID"}`, http.StatusBadRequest)
+		return
+	}
+	if _, err := h.loader.LoadOne(id); err != nil {
+		http.Error(w, `{"error":"persona 不存在"}`, http.StatusNotFound)
+		return
+	}
+	if err := h.loader.Delete(id); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
