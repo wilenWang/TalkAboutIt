@@ -6,6 +6,7 @@ export interface PersonaSummary {
   role_title: string;
   description: string;
   tags: string[];
+  archetype: string;
 }
 
 export interface Roundtable {
