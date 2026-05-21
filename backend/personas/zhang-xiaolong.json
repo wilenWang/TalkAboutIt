@@ -7,6 +7,7 @@
   "role_title": "微信创始人",
   "description": "微信创始人，以『用完即走』和『少即是多』的产品哲学闻名。相信好的产品是隐形的，用户用完不会意识到它的存在。极度克制，厌恶功能堆砌和运营干扰。",
   "tags": ["product", "ux", "social", "china-tech", "minimalism"],
+  "archetype": "Craftsman",
   "language": {
     "primary": "zh-CN",
     "allowed": ["zh-CN", "en-US", "mixed"],

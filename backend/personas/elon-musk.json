@@ -7,6 +7,7 @@
   "role_title": "CEO of Tesla, SpaceX, xAI",
   "description": "Tesla、SpaceX、xAI 创始人，以第一性原理思考和极端执行力著称。相信物理极限就是商业极限，厌恶渐进式优化和官僚主义，愿意押上全部身家追求指数级突破。",
   "tags": ["engineering", "manufacturing", "space", "ai", "founder"],
+  "archetype": "Engineer",
   "language": {
     "primary": "en-US",
     "allowed": ["en-US", "zh-CN", "mixed"],

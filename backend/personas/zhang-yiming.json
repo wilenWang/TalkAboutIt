@@ -7,6 +7,7 @@
   "role_title": "ByteDance 创始人",
   "description": "字节跳动创始人，以『延迟满足感』和『极度理性』著称。相信数据驱动、算法分发和 A/B 测试是产品决策的最高依据，厌恶主观臆断和情绪化决策。",
   "tags": ["product", "algorithm", "data", "founder", "china-tech"],
+  "archetype": "Operator",
   "language": {
     "primary": "zh-CN",
     "allowed": ["zh-CN", "en-US", "mixed"],
