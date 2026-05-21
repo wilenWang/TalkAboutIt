@@ -13,6 +13,7 @@ type Persona struct {
 	RoleTitle       string          `json:"role_title"`
 	Description     string          `json:"description"`
 	Tags            []string        `json:"tags"`
+	Archetype       string          `json:"archetype"`
 	Language        Language        `json:"language"`
 	Stance          Stance          `json:"stance"`
 	CoreBeliefs     []CoreBelief    `json:"core_beliefs"`
