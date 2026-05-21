@@ -2,6 +2,7 @@
 package persona
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,4 +67,29 @@ func (l *Loader) LoadOne(id string) (Persona, error) {
 	}
 
 	return *p, nil
+}
+
+// Save 保存 Persona 到 JSON 文件。
+func (l *Loader) Save(p Persona) error {
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化 persona 失败: %w", err)
+	}
+	path := filepath.Join(l.dir, p.ID+".json")
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("写入 %s 失败: %w", path, err)
+	}
+	return nil
+}
+
+// Delete 删除指定 ID 的 Persona 文件。
+func (l *Loader) Delete(id string) error {
+	path := filepath.Join(l.dir, id+".json")
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("删除 %s 失败: %w", path, err)
+	}
+	return nil
 }

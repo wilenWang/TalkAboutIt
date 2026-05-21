@@ -10,10 +10,11 @@ import { useSSE } from './hooks/useSSE';
 import type { PersonaSummary } from './types';
 import HistoryListPage from './pages/HistoryListPage';
 import HistoryDetailPage from './pages/HistoryDetailPage';
+import PersonaManagePage from './pages/PersonaManagePage';
 import { useLanguage, type SystemLanguage } from './i18n/LanguageContext';
 
 type AppStatus = 'idle' | 'creating' | 'streaming' | 'completed';
-type Page = 'talk' | 'history' | 'history-detail';
+type Page = 'talk' | 'history' | 'history-detail' | 'personas';
 
 // 从 URL pathname 解析初始页面和 historyId
 function parsePageFromPath(): { page: Page; historyId: string | null } {
@@ -26,6 +27,9 @@ function parsePageFromPath(): { page: Page; historyId: string | null } {
     if (id) {
       return { page: 'history-detail', historyId: id };
     }
+  }
+  if (path === '/personas') {
+    return { page: 'personas', historyId: null };
   }
   return { page: 'talk', historyId: null };
 }
@@ -41,8 +45,8 @@ export default function App() {
     systemLanguage === 'en-US' ? 'Will AI replace programmers?' : 'AI 会取代程序员吗？'
   );
   const [rounds, setRounds] = useState(3);
-  const [debateLanguage, setDebateLanguage] = useState<SystemLanguage>(systemLanguage);
-  const [hasCustomDebateLanguage, setHasCustomDebateLanguage] = useState(false);
+  // 讨论语言统一走右上角全局语言切换，不再单独设置
+  const debateLanguage = systemLanguage;
   const [status, setStatus] = useState<AppStatus>('idle');
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [currentSpeaker, setCurrentSpeaker] = useState<{ name: string; avatar: string } | null>(null);
@@ -58,11 +62,7 @@ export default function App() {
   // 快照恢复后用于 SSE 首次连接的 last_event_id
   const resumeFromEventIdRef = useRef<string>('');
 
-  useEffect(() => {
-    if (!hasCustomDebateLanguage) {
-      setDebateLanguage(systemLanguage);
-    }
-  }, [systemLanguage, hasCustomDebateLanguage]);
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -249,10 +249,7 @@ export default function App() {
       setTopic(snap.topic);
       setRounds(snap.max_rounds);
       setSelectedPersonas(snap.personas);
-      if (snap.language === 'zh-CN' || snap.language === 'en-US') {
-        setDebateLanguage(snap.language);
-        setHasCustomDebateLanguage(true);
-      }
+      // 讨论语言统一走全局语言，快照中的语言仅用于展示兼容，不再单独设置
 
       // 将历史消息转为 StreamMessage，并尝试从本地 personaList 匹配真实名字和头像
       const historyMsgs: StreamMessage[] = snap.messages.map((m) => {
@@ -450,13 +447,7 @@ export default function App() {
           <div className="bg-white border border-black/10 rounded-xl p-5 mb-6 shadow-[rgba(0,0,0,0.04)_0px_4px_18px]">
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <TopicInput value={topic} onChange={setTopic} />
-              <LanguageToggle
-                value={debateLanguage}
-                onChange={(nextLanguage) => {
-                  setDebateLanguage(nextLanguage);
-                  setHasCustomDebateLanguage(true);
-                }}
-              />
+
               <RoundSelect value={rounds} onChange={setRounds} />
             </div>
             <div className="flex justify-end">

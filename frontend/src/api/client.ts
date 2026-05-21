@@ -16,6 +16,39 @@ export async function fetchPersonas(): Promise<import('../types').PersonaSummary
   return res.json();
 }
 
+export async function fetchPersona(id: string): Promise<import('../types/persona').Persona> {
+  const res = await fetch(`${BASE}/api/v1/personas/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error('errFetchPersonas');
+  return res.json();
+}
+
+export async function createPersona(body: import('../types/persona').Persona): Promise<import('../types/persona').Persona> {
+  const res = await fetch(`${BASE}/api/v1/personas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('errCreatePersona');
+  return res.json();
+}
+
+export async function updatePersona(id: string, body: import('../types/persona').Persona): Promise<import('../types/persona').Persona> {
+  const res = await fetch(`${BASE}/api/v1/personas/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('errUpdatePersona');
+  return res.json();
+}
+
+export async function deletePersona(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/api/v1/personas/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('errDeletePersona');
+}
+
 export async function createRoundtable(body: {
   topic: string;
   personas: string[];

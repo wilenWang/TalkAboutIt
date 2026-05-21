@@ -567,12 +567,12 @@ func TestMethodNotAllowed(t *testing.T) {
 	mux := http.NewServeMux()
 	h.RegisterRoutes(mux)
 
-	// POST /api/v1/personas 不存在，应返回 405（Go 1.22+ ServeMux 对方法不匹配返回 405）
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/personas", nil)
+	// DELETE /api/v1/personas 不存在（只有 DELETE /{id}），应返回 405（Go 1.22+ ServeMux 对方法不匹配返回 405）
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/personas", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	if rec.Code != http.StatusMethodNotAllowed {
-		t.Errorf("POST /api/v1/personas 期望 405，得到 %d", rec.Code)
+		t.Errorf("DELETE /api/v1/personas 期望 405，得到 %d", rec.Code)
 	}
 
 	// PUT /api/v1/roundtables/{id} 不存在，应返回 405
