@@ -71,6 +71,7 @@ export const translations = {
   archetypeOperator:    { 'zh-CN': '运营者', 'en-US': 'Operator' },
 
   // ── Filter ──
+  labelFilter:          { 'zh-CN': '筛选',   'en-US': 'Filter' },
   labelFilterAll:       { 'zh-CN': '全部',   'en-US': 'All' },
   msgNoFilterResults:   { 'zh-CN': '没有符合条件的人物', 'en-US': 'No personas match this filter' },
 
