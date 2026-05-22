@@ -24,7 +24,7 @@ type OnEventFunc func(evt session.Event)
 // Engine 编排讨论流程。
 type Engine struct {
 	store    *session.Store
-	loader   *persona.Loader
+	loader   persona.Repository
 	generate GenerateFunc
 	provider llm.Provider // 可选：真实 LLM provider（用于动态语言模式）
 	onEvent  OnEventFunc
@@ -32,7 +32,7 @@ type Engine struct {
 
 // NewEngine 创建 Engine 实例。
 // 若 generate 为 nil，则使用 DefaultMockGenerate 作为 fallback。
-func NewEngine(store *session.Store, loader *persona.Loader, generate GenerateFunc) *Engine {
+func NewEngine(store *session.Store, loader persona.Repository, generate GenerateFunc) *Engine {
 	if generate == nil {
 		generate = DefaultMockGenerate
 	}
@@ -44,7 +44,7 @@ func NewEngine(store *session.Store, loader *persona.Loader, generate GenerateFu
 }
 
 // NewEngineWithProvider 创建带真实 LLM provider 的 Engine（支持动态语言模式）。
-func NewEngineWithProvider(store *session.Store, loader *persona.Loader, provider llm.Provider) *Engine {
+func NewEngineWithProvider(store *session.Store, loader persona.Repository, provider llm.Provider) *Engine {
 	return &Engine{
 		store:    store,
 		loader:   loader,
@@ -295,6 +295,9 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 
 			if st, ok := states[p.ID]; ok {
 				st.RecordArgument(persona.ExtractArgument(content))
+				if err := e.store.UpsertPersonaSessionState(ctx, tableID, p.ID, st); err != nil {
+					return fmt.Errorf("保存 persona 运行时状态失败: %w", err)
+				}
 			}
 			for _, peer := range personas {
 				if peer.ID == p.ID {

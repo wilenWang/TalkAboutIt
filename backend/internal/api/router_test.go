@@ -20,16 +20,25 @@ import (
 func setupTestHandler(t *testing.T) (*Handler, *session.Store, string) {
 	t.Helper()
 	tmpDir := t.TempDir()
-	loader := persona.NewLoader("../../personas")
+	fileLoader := persona.NewLoader("../../personas")
 
 	dbPath := filepath.Join(tmpDir, "api_test.db")
 	store, err := session.NewStore(dbPath)
 	if err != nil {
 		t.Fatalf("NewStore failed: %v", err)
 	}
+	personas, err := fileLoader.LoadAll()
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	for _, p := range personas {
+		if err := store.Save(p); err != nil {
+			t.Fatalf("Save persona failed: %v", err)
+		}
+	}
 
-	eng := engine.NewEngine(store, loader, nil)
-	h := NewHandler(loader, store, eng)
+	eng := engine.NewEngine(store, store, nil)
+	h := NewHandler(store, store, eng)
 	return h, store, dbPath
 }
 

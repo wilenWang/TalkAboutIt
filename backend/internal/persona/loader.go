@@ -13,6 +13,15 @@ type Loader struct {
 	dir string
 }
 
+// Repository 定义 Persona 的持久化读写边界。
+// 文件 Loader 与 SQLite Store 都实现该接口，便于从 JSON 逐步迁移到数据库。
+type Repository interface {
+	LoadAll() (map[string]Persona, error)
+	LoadOne(id string) (Persona, error)
+	Save(p Persona) error
+	Delete(id string) error
+}
+
 // NewLoader 创建一个从 dir 目录加载 Persona 的 Loader。
 func NewLoader(dir string) *Loader {
 	return &Loader{dir: dir}

@@ -13,14 +13,14 @@ import (
 
 // Handler 持有所有 API 依赖。
 type Handler struct {
-	loader *persona.Loader
+	loader persona.Repository
 	store  *session.Store
 	bus    *EventBus
 	engine *engine.Engine
 }
 
 // NewHandler 创建 API Handler。
-func NewHandler(loader *persona.Loader, store *session.Store, eng *engine.Engine) *Handler {
+func NewHandler(loader persona.Repository, store *session.Store, eng *engine.Engine) *Handler {
 	h := &Handler{
 		loader: loader,
 		store:  store,

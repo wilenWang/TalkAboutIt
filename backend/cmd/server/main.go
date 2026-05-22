@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -46,6 +47,9 @@ func main() {
 	// 初始化 SQLite
 	dbPath := cfg.Database.Path
 	if dbPath == "" {
+		dbPath = cfg.Session.DBPath
+	}
+	if dbPath == "" {
 		dbPath = "data/talkaboutit.db"
 	}
 	if !filepath.IsAbs(dbPath) {
@@ -63,19 +67,35 @@ func main() {
 	}
 	defer store.Close()
 
+	if count, err := store.CountPersonas(context.Background()); err == nil && count == 0 {
+		filePersonas, err := loader.LoadAll()
+		if err != nil {
+			log.Printf("从 JSON 导入 persona 失败，继续使用空数据库: %v", err)
+		} else {
+			for _, p := range filePersonas {
+				if err := store.Save(p); err != nil {
+					log.Fatalf("导入 persona %s 失败: %v", p.ID, err)
+				}
+			}
+			log.Printf("已从 JSON 导入 %d 个 persona 到 SQLite", len(filePersonas))
+		}
+	} else if err != nil {
+		log.Fatalf("统计 persona 失败: %v", err)
+	}
+
 	// 初始化 LLM Provider（通过工厂）
 	var eng *engine.Engine
 	provider, err := llm.NewProvider(*cfg)
 	if err != nil {
 		log.Printf("LLM Provider 初始化失败，回退到 mock: %v", err)
-		eng = engine.NewEngine(store, loader, nil)
+		eng = engine.NewEngine(store, store, nil)
 	} else {
 		log.Printf("LLM Provider 初始化成功: %s / %s", provider.Name(), provider.Model())
-		eng = engine.NewEngineWithProvider(store, loader, provider)
+		eng = engine.NewEngineWithProvider(store, store, provider)
 	}
 
 	// 初始化 API handler
-	handler := api.NewHandler(loader, store, eng)
+	handler := api.NewHandler(store, store, eng)
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 

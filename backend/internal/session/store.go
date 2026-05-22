@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/wilenwang/talkaboutit/internal/persona"
 	_ "modernc.org/sqlite"
 )
 
@@ -18,16 +19,16 @@ type Store struct {
 
 // Roundtable 代表一张圆桌讨论。
 type Roundtable struct {
-	ID           string    `json:"id"`
-	Topic        string    `json:"topic"`
-	PersonasJSON string    `json:"personas_json"`
-	MaxRounds    int       `json:"max_rounds"`
-	Language     string    `json:"language"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           string     `json:"id"`
+	Topic        string     `json:"topic"`
+	PersonasJSON string     `json:"personas_json"`
+	MaxRounds    int        `json:"max_rounds"`
+	Language     string     `json:"language"`
+	Status       string     `json:"status"`
+	CreatedAt    time.Time  `json:"created_at"`
 	StartedAt    *time.Time `json:"started_at,omitempty"`
 	FinishedAt   *time.Time `json:"finished_at,omitempty"`
-	LastEventID  int       `json:"last_event_id"`
+	LastEventID  int        `json:"last_event_id"`
 }
 
 // Message 代表一条发言消息。
@@ -124,6 +125,74 @@ CREATE TABLE IF NOT EXISTS roundtable_events (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (roundtable_id, event_id),
   FOREIGN KEY (roundtable_id) REFERENCES roundtables(id)
+);
+
+CREATE TABLE IF NOT EXISTS personas (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS persona_web_profiles (
+  persona_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  avatar TEXT NOT NULL,
+  role_title TEXT,
+  summary TEXT NOT NULL,
+  description TEXT,
+  archetype TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS persona_souls (
+  persona_id TEXT PRIMARY KEY,
+  schema_version TEXT NOT NULL DEFAULT 'soul.v1',
+  language_json TEXT NOT NULL DEFAULT '{}',
+  identity_json TEXT NOT NULL DEFAULT '{}',
+  worldview_json TEXT NOT NULL DEFAULT '{}',
+  thinking_json TEXT NOT NULL DEFAULT '{}',
+  speaking_style_json TEXT NOT NULL DEFAULT '{}',
+  knowledge_json TEXT NOT NULL DEFAULT '{}',
+  interaction_json TEXT NOT NULL DEFAULT '{}',
+  debate_json TEXT NOT NULL DEFAULT '{}',
+  guardrails_json TEXT NOT NULL DEFAULT '{}',
+  raw_legacy_json TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS persona_examples (
+  id TEXT PRIMARY KEY,
+  persona_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  language TEXT,
+  topic_hint TEXT,
+  weight INTEGER NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS persona_session_states (
+  id TEXT PRIMARY KEY,
+  roundtable_id TEXT NOT NULL,
+  persona_id TEXT NOT NULL,
+  used_arguments_json TEXT NOT NULL DEFAULT '[]',
+  used_phrases_json TEXT NOT NULL DEFAULT '[]',
+  current_focus_json TEXT NOT NULL DEFAULT '{}',
+  mood_json TEXT NOT NULL DEFAULT '{}',
+  peer_attitudes_json TEXT NOT NULL DEFAULT '{}',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(roundtable_id, persona_id),
+  FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE,
+  FOREIGN KEY (roundtable_id) REFERENCES roundtables(id) ON DELETE CASCADE
 );
 `
 	_, err := s.db.Exec(schema)
@@ -405,6 +474,239 @@ func (s *Store) GetEventsAfter(ctx context.Context, roundtableID string, afterEv
 		events = append(events, e)
 	}
 	return events, rows.Err()
+}
+
+// CountPersonas 返回数据库中的 persona 数量。
+func (s *Store) CountPersonas(ctx context.Context) (int, error) {
+	var count int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM personas`).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// LoadAll 加载所有 SQLite 中的 Persona，满足 persona.Repository 接口。
+func (s *Store) LoadAll() (map[string]persona.Persona, error) {
+	rows, err := s.db.Query(
+		`SELECT ps.raw_legacy_json
+		 FROM personas p
+		 JOIN persona_souls ps ON ps.persona_id = p.id
+		 WHERE p.status = 'active'
+		 ORDER BY p.created_at`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string]persona.Persona)
+	for rows.Next() {
+		var raw sql.NullString
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		if !raw.Valid || raw.String == "" {
+			continue
+		}
+		p, err := persona.ValidateJSON([]byte(raw.String))
+		if err != nil {
+			return nil, err
+		}
+		result[p.ID] = *p
+	}
+	return result, rows.Err()
+}
+
+// LoadOne 加载指定 Persona，满足 persona.Repository 接口。
+func (s *Store) LoadOne(id string) (persona.Persona, error) {
+	var raw sql.NullString
+	err := s.db.QueryRow(
+		`SELECT ps.raw_legacy_json
+		 FROM personas p
+		 JOIN persona_souls ps ON ps.persona_id = p.id
+		 WHERE p.id = ? AND p.status = 'active'`, id,
+	).Scan(&raw)
+	if err == sql.ErrNoRows {
+		return persona.Persona{}, fmt.Errorf("persona %s 不存在", id)
+	}
+	if err != nil {
+		return persona.Persona{}, err
+	}
+	if !raw.Valid || raw.String == "" {
+		return persona.Persona{}, fmt.Errorf("persona %s 缺少 legacy payload", id)
+	}
+	p, err := persona.ValidateJSON([]byte(raw.String))
+	if err != nil {
+		return persona.Persona{}, err
+	}
+	if p.ID != id {
+		return persona.Persona{}, fmt.Errorf("数据库 ID %q 与 payload ID %q 不匹配", id, p.ID)
+	}
+	return *p, nil
+}
+
+// Save 将 Persona 拆分保存到 web profile、soul 与 examples 表。
+func (s *Store) Save(p persona.Persona) error {
+	if err := p.Validate(); err != nil {
+		return err
+	}
+
+	tagsJSON, err := json.Marshal(p.Tags)
+	if err != nil {
+		return fmt.Errorf("序列化 tags 失败: %w", err)
+	}
+	rawJSON, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化 persona 失败: %w", err)
+	}
+
+	languageJSON, _ := json.Marshal(p.Language)
+	identityJSON, _ := json.Marshal(map[string]interface{}{
+		"name":         p.Name,
+		"display_name": p.DisplayName,
+		"role_title":   p.RoleTitle,
+		"description":  p.Description,
+		"tags":         p.Tags,
+		"archetype":    p.Archetype,
+	})
+	worldviewJSON, _ := json.Marshal(map[string]interface{}{
+		"stance":       p.Stance,
+		"core_beliefs": p.CoreBeliefs,
+	})
+	thinkingJSON, _ := json.Marshal(map[string]interface{}{})
+	speakingJSON, _ := json.Marshal(p.SpeakingStyle)
+	knowledgeJSON, _ := json.Marshal(p.KnowledgeScope)
+	interactionJSON, _ := json.Marshal(p.InteractionRules)
+	debateJSON, _ := json.Marshal(p.DebateGoal)
+	guardrailsJSON, _ := json.Marshal(p.Prompting)
+
+	displayName := p.DisplayName
+	if displayName == "" {
+		displayName = p.Name
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
+		`INSERT INTO personas (id, slug, status, updated_at)
+		 VALUES (?, ?, 'active', CURRENT_TIMESTAMP)
+		 ON CONFLICT(id) DO UPDATE SET
+		   slug = excluded.slug,
+		   status = 'active',
+		   updated_at = CURRENT_TIMESTAMP`,
+		p.ID, p.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("保存 personas 失败: %w", err)
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO persona_web_profiles
+		   (persona_id, name, display_name, avatar, role_title, summary, description, archetype, tags_json)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		 ON CONFLICT(persona_id) DO UPDATE SET
+		   name = excluded.name,
+		   display_name = excluded.display_name,
+		   avatar = excluded.avatar,
+		   role_title = excluded.role_title,
+		   summary = excluded.summary,
+		   description = excluded.description,
+		   archetype = excluded.archetype,
+		   tags_json = excluded.tags_json`,
+		p.ID, p.Name, displayName, p.Avatar, p.RoleTitle, p.Description, p.Description, p.Archetype, string(tagsJSON),
+	)
+	if err != nil {
+		return fmt.Errorf("保存 persona_web_profiles 失败: %w", err)
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO persona_souls
+		   (persona_id, schema_version, language_json, identity_json, worldview_json, thinking_json,
+		    speaking_style_json, knowledge_json, interaction_json, debate_json, guardrails_json, raw_legacy_json, updated_at)
+		 VALUES (?, 'soul.v1', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+		 ON CONFLICT(persona_id) DO UPDATE SET
+		   language_json = excluded.language_json,
+		   identity_json = excluded.identity_json,
+		   worldview_json = excluded.worldview_json,
+		   thinking_json = excluded.thinking_json,
+		   speaking_style_json = excluded.speaking_style_json,
+		   knowledge_json = excluded.knowledge_json,
+		   interaction_json = excluded.interaction_json,
+		   debate_json = excluded.debate_json,
+		   guardrails_json = excluded.guardrails_json,
+		   raw_legacy_json = excluded.raw_legacy_json,
+		   updated_at = CURRENT_TIMESTAMP`,
+		p.ID,
+		string(languageJSON),
+		string(identityJSON),
+		string(worldviewJSON),
+		string(thinkingJSON),
+		string(speakingJSON),
+		string(knowledgeJSON),
+		string(interactionJSON),
+		string(debateJSON),
+		string(guardrailsJSON),
+		string(rawJSON),
+	)
+	if err != nil {
+		return fmt.Errorf("保存 persona_souls 失败: %w", err)
+	}
+
+	if _, err := tx.Exec(`DELETE FROM persona_examples WHERE persona_id = ?`, p.ID); err != nil {
+		return fmt.Errorf("清理 persona_examples 失败: %w", err)
+	}
+	if p.Examples.OpeningLine != "" {
+		if _, err := tx.Exec(
+			`INSERT INTO persona_examples (id, persona_id, type, content, language, weight)
+			 VALUES (?, ?, 'opening', ?, ?, 1)`,
+			p.ID+":opening", p.ID, p.Examples.OpeningLine, p.Language.Primary,
+		); err != nil {
+			return fmt.Errorf("保存 opening example 失败: %w", err)
+		}
+	}
+	if p.Examples.SampleRebuttal != "" {
+		if _, err := tx.Exec(
+			`INSERT INTO persona_examples (id, persona_id, type, content, language, weight)
+			 VALUES (?, ?, 'rebuttal', ?, ?, 1)`,
+			p.ID+":rebuttal", p.ID, p.Examples.SampleRebuttal, p.Language.Primary,
+		); err != nil {
+			return fmt.Errorf("保存 rebuttal example 失败: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+// Delete 删除指定 Persona，满足 persona.Repository 接口。
+func (s *Store) Delete(id string) error {
+	_, err := s.db.Exec(`DELETE FROM personas WHERE id = ?`, id)
+	return err
+}
+
+// UpsertPersonaSessionState 保存某个 persona 在某场讨论中的运行时状态。
+func (s *Store) UpsertPersonaSessionState(ctx context.Context, roundtableID string, personaID string, state *persona.PerPersonaState) error {
+	if state == nil {
+		state = &persona.PerPersonaState{}
+	}
+	usedArgumentsJSON, err := json.Marshal(state.UsedArguments)
+	if err != nil {
+		return fmt.Errorf("序列化 used_arguments 失败: %w", err)
+	}
+	id := roundtableID + ":" + personaID
+	_, err = s.db.ExecContext(ctx,
+		`INSERT INTO persona_session_states
+		   (id, roundtable_id, persona_id, used_arguments_json, updated_at)
+		 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+		 ON CONFLICT(roundtable_id, persona_id) DO UPDATE SET
+		   used_arguments_json = excluded.used_arguments_json,
+		   updated_at = CURRENT_TIMESTAMP`,
+		id, roundtableID, personaID, string(usedArgumentsJSON),
+	)
+	return err
 }
 
 func nullInt(v *int) interface{} {

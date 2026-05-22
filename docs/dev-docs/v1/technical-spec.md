@@ -577,6 +577,14 @@ CREATE INDEX IF NOT EXISTS idx_messages_roundtable
     ON messages(roundtable_id, round, id);
 ```
 
+当前实现还将 Persona 从文件资产迁移到 SQLite，采用分层表：
+
+- `personas`：人物主记录与生命周期。
+- `persona_web_profiles`：前端展示字段，包括姓名、头像、简介、标签和 archetype。
+- `persona_souls`：人物内核模块，当前以 JSON 保存 `language/worldview/thinking/speaking_style/knowledge/interaction/debate/guardrails`，并保留 `raw_legacy_json` 兼容现有 `persona.v1` prompt 流程。
+- `persona_examples`：开场、反驳等可抽取表达素材。
+- `persona_session_states`：单场讨论中的运行时状态，例如已用论点，用于降低重复发言。
+
 ### 设计决策
 
 - `personas` 字段存 JSON 数组：简单，无需多对多关联表

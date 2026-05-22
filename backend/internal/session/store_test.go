@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/wilenwang/talkaboutit/internal/persona"
 )
 
 func TestStore_CreateGetUpdate(t *testing.T) {
@@ -54,6 +56,83 @@ func TestStore_CreateGetUpdate(t *testing.T) {
 	}
 	if got.StartedAt == nil {
 		t.Error("expected started_at to be set")
+	}
+}
+
+func TestStore_PersonaCRUDAndSessionState(t *testing.T) {
+	ctx := context.Background()
+	dbPath := "/tmp/test_talkaboutit_persona_" + time.Now().Format("20060102150405") + ".db"
+	defer os.Remove(dbPath)
+
+	store, err := NewStore(dbPath)
+	if err != nil {
+		t.Fatalf("NewStore failed: %v", err)
+	}
+	defer store.Close()
+
+	p := persona.Persona{
+		SchemaVersion: "persona.v1",
+		ID:            "test-persona",
+		Name:          "Test Persona",
+		DisplayName:   "Test Persona",
+		Avatar:        "🤖",
+		RoleTitle:     "Tester",
+		Description:   "A persona stored in SQLite",
+		Tags:          []string{"test"},
+		Archetype:     "Engineer",
+		Language:      persona.Language{Primary: "zh-CN", Allowed: []string{"zh-CN"}, DefaultOutput: "follow_user"},
+		Stance:        persona.Stance{DefaultPosition: "test", Intensity: 3},
+		SpeakingStyle: persona.SpeakingStyle{Tone: "calm", Cadence: "balanced", Verbosity: 3},
+		KnowledgeScope: persona.KnowledgeScope{
+			Domains:          []string{"testing"},
+			ExpertiseLevel:   map[string]int{"testing": 3},
+			AllowedInference: "medium",
+		},
+		InteractionRules: persona.InteractionRules{InterruptionPolicy: "never"},
+		DebateGoal:       persona.DebateGoal{PrimaryGoal: "test"},
+		Examples:         persona.Examples{OpeningLine: "hello", SampleRebuttal: "no"},
+	}
+
+	if err := store.Save(p); err != nil {
+		t.Fatalf("Save persona failed: %v", err)
+	}
+	got, err := store.LoadOne(p.ID)
+	if err != nil {
+		t.Fatalf("LoadOne failed: %v", err)
+	}
+	if got.ID != p.ID || got.Name != p.Name || got.Examples.OpeningLine != "hello" {
+		t.Fatalf("loaded persona mismatch: %+v", got)
+	}
+	all, err := store.LoadAll()
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	if _, ok := all[p.ID]; !ok {
+		t.Fatalf("LoadAll missing %s", p.ID)
+	}
+
+	rt := &Roundtable{
+		ID:           "rt_persona_state",
+		Topic:        "State",
+		PersonasJSON: `["test-persona"]`,
+		MaxRounds:    1,
+		Language:     "zh-CN",
+		Status:       "pending",
+	}
+	if err := store.CreateRoundtable(ctx, rt); err != nil {
+		t.Fatalf("CreateRoundtable failed: %v", err)
+	}
+	state := &persona.PerPersonaState{}
+	state.RecordArgument("first argument")
+	if err := store.UpsertPersonaSessionState(ctx, rt.ID, p.ID, state); err != nil {
+		t.Fatalf("UpsertPersonaSessionState failed: %v", err)
+	}
+
+	if err := store.Delete(p.ID); err != nil {
+		t.Fatalf("Delete failed: %v", err)
+	}
+	if _, err := store.LoadOne(p.ID); err == nil {
+		t.Fatalf("LoadOne should fail after delete")
 	}
 }
 
