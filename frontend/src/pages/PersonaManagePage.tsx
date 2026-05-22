@@ -63,28 +63,18 @@ export default function PersonaManagePage({ onBack }: Props) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Header */}
-      <header className="px-6 py-3 flex items-center gap-3 border-b border-black/[0.06]">
-        <button
-          onClick={onBack}
-          className="text-[13px] text-[#615d59] hover:text-black/95 transition-colors"
-        >
-          ← {t('actionBack')}
-        </button>
-        <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="flex-1" />
-        <button
-          onClick={() => setIsCreating(true)}
-          className="px-4 py-1.5 bg-[#0075de] text-white text-sm rounded-md hover:bg-[#0066c0] transition-colors"
-        >
-          {t('actionNewPersona')}
-        </button>
-      </header>
-
+    <div className="h-full flex flex-col bg-white">
       {/* Content */}
-      <main className="flex-1 overflow-y-auto px-6 py-8 max-w-[900px] mx-auto w-full">
-        <h2 className="text-[22px] font-bold tracking-tight mb-6">{t('tabPersonas')}</h2>
+      <div className="flex-1 overflow-y-auto px-6 py-8 max-w-[900px] mx-auto w-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[22px] font-bold tracking-tight">{t('tabPersonas')}</h2>
+          <button
+            onClick={() => setIsCreating(true)}
+            className="px-4 py-1.5 bg-[#0075de] text-white text-sm rounded-md hover:bg-[#0066c0] transition-colors"
+          >
+            {t('actionNewPersona')}
+          </button>
+        </div>
 
         {/* Filter */}
         <div className="mb-6">
@@ -110,7 +100,7 @@ export default function PersonaManagePage({ onBack }: Props) {
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

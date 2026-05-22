@@ -118,6 +118,9 @@ export const translations = {
   // ── Input placeholders ──
   inputTopicPlaceholder:  { 'zh-CN': '输入讨论话题...',      'en-US': 'Enter a discussion topic...' },
 
+  // ── File upload ──
+  msgUploadFile:          { 'zh-CN': '拖拽或点击上传文件',     'en-US': 'Drop files or click to upload' },
+
   // ── Separators ──
   sepParticipants:        { 'zh-CN': '、',               'en-US': ', ' },
 

@@ -1,9 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import PersonaSelector from './components/PersonaSelector';
-import TopicInput from './components/TopicInput';
-import RoundSelect from './components/RoundSelect';
-import LanguageToggle from './components/LanguageToggle';
-import StartButton from './components/StartButton';
+import NavSidebar from './components/NavSidebar';
+import TopicPanel from './components/TopicPanel';
 import MessageStream, { StreamMessage } from './components/MessageStream';
 import { createRoundtable, startRoundtable, getRoundtable, fetchPersonas } from './api/client';
 import { useSSE } from './hooks/useSSE';
@@ -221,6 +219,8 @@ export default function App() {
       url = '/history';
     } else if (page === 'history-detail' && historyId) {
       url = `/history/${historyId}`;
+    } else if (page === 'personas') {
+      url = '/personas';
     } else {
       url = '/';
     }
@@ -386,12 +386,15 @@ export default function App() {
     );
   }
 
+  // talk 和 personas 页面共享侧边栏布局
+  const navPage = page === 'personas' ? 'personas' : 'talk';
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
       <header className="px-6 py-3 flex items-center gap-3 border-b border-black/[0.06]">
         <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('pageRoundtable')}</span>
+        <span className="text-[13px] text-[#a39e98]">{navPage === 'talk' ? t('pageRoundtable') : t('tabPersonas')}</span>
         <span className="flex-1" />
         <div className="relative" ref={languageMenuRef}>
           <button
@@ -435,80 +438,87 @@ export default function App() {
 
       {/* Main */}
       <div className="flex flex-1 overflow-hidden">
-        <PersonaSelector selected={selectedPersonas} onChange={setSelectedPersonas} />
+        <NavSidebar
+          active={navPage}
+          onNavigate={(p) => setPage(p === 'talk' ? 'talk' : 'personas')}
+        />
 
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-8 max-w-[900px]">
-          <h2 className="text-[22px] font-bold tracking-tight mb-1">{t('pageRoundtable')}</h2>
-          <p className="text-sm text-[#615d59] mb-6">
-            {t('msgDiscussionSubtitle')}
-          </p>
+        {navPage === 'personas' ? (
+          <main className="flex-1 overflow-y-auto">
+            <PersonaManagePage onBack={() => setPage('talk')} />
+          </main>
+        ) : (
+          <>
+            {/* Column 1: Topic setup */}
+            <TopicPanel
+              topic={topic}
+              onTopicChange={setTopic}
+              rounds={rounds}
+              onRoundsChange={setRounds}
+              onStart={handleStart}
+              canStart={canStart}
+              loading={status === 'creating'}
+              hint={startHint}
+            />
 
-          {/* Controls */}
-          <div className="bg-white border border-black/10 rounded-xl p-5 mb-6 shadow-[rgba(0,0,0,0.04)_0px_4px_18px]">
-            <div className="flex flex-wrap items-center gap-3 mb-3">
-              <TopicInput value={topic} onChange={setTopic} />
+            {/* Column 2: Persona selection */}
+            <PersonaSelector selected={selectedPersonas} onChange={setSelectedPersonas} />
 
-              <RoundSelect value={rounds} onChange={setRounds} />
+            {/* Column 3: Chat area */}
+            <div className="flex-1 flex flex-col overflow-hidden bg-[#f9f9f9]">
+              {/* Error banner */}
+              {error && (
+                <div className="px-4 py-2 bg-red-50 border-b border-red-100 flex items-center gap-2">
+                  <span className="text-sm text-red-500">{error}</span>
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      if (status === 'idle') handleStart();
+                    }}
+                    className="text-sm text-[#0075de] hover:underline"
+                  >
+                    {t('actionRetry')}
+                  </button>
+                </div>
+              )}
+
+              {/* Disconnection banner */}
+              {sseStatus === 'disconnected' && status === 'streaming' && (
+                <div className="px-4 py-2 bg-red-50 border-b border-red-100 flex items-center justify-between">
+                  <span className="text-sm text-red-600">{t('statusConnectionLost')}</span>
+                  <button
+                    onClick={() => reconnectSSE()}
+                    className="text-sm font-semibold text-red-600 hover:text-red-700"
+                  >
+                    {t('statusReconnectManually')}
+                  </button>
+                </div>
+              )}
+
+              {/* Messages */}
+              <MessageStream messages={messages} currentSpeaker={currentSpeaker} />
+
+              {/* Completed: view replay */}
+              {status === 'completed' && rtIdRef.current && (
+                <div className="px-4 py-3 border-t border-black/[0.06] flex justify-center">
+                  <button
+                    onClick={() => {
+                      const id = rtIdRef.current;
+                      if (id) {
+                        setHistoryId(id);
+                        setPage('history-detail');
+                        window.history.pushState({ page: 'history-detail', historyId: id }, '', `/history/${id}`);
+                      }
+                    }}
+                    className="px-5 py-2 rounded-lg text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
+                  >
+                    {t('actionViewReplay')}
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex justify-end">
-              <StartButton
-                disabled={!canStart}
-                loading={status === 'creating'}
-                onClick={handleStart}
-                hint={startHint}
-              />
-            </div>
-            {error && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-sm text-red-500">{error}</span>
-                <button
-                  onClick={() => {
-                    setError(null);
-                    if (status === 'idle') handleStart();
-                  }}
-                  className="text-sm text-[#0075de] hover:underline"
-                >
-                  {t('actionRetry')}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* 断连态提示 */}
-          {sseStatus === 'disconnected' && status === 'streaming' && (
-            <div className="mb-4 bg-red-50 border border-red-100 rounded-lg px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-red-600">{t('statusConnectionLost')}</span>
-              <button
-                onClick={() => reconnectSSE()}
-                className="text-sm font-semibold text-red-600 hover:text-red-700"
-              >
-                {t('statusReconnectManually')}
-              </button>
-            </div>
-          )}
-
-          {/* Messages */}
-          <MessageStream messages={messages} currentSpeaker={currentSpeaker} />
-
-          {/* 完成态：查看回放 */}
-          {status === 'completed' && rtIdRef.current && (
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={() => {
-                  const id = rtIdRef.current;
-                  if (id) {
-                    setHistoryId(id);
-                    setPage('history-detail');
-                    window.history.pushState({ page: 'history-detail', historyId: id }, '', `/history/${id}`);
-                  }
-                }}
-                className="px-5 py-2 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
-              >
-                {t('actionViewReplay')}
-              </button>
-            </div>
-          )}
-        </main>
+          </>
+        )}
       </div>
     </div>
   );
