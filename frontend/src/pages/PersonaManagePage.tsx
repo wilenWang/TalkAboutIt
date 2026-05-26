@@ -1,34 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchPersonas, deletePersona } from '../api/client';
-import type { PersonaSummary } from '../types';
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { deletePersona } from '../api/client';
+import { usePersonaStore } from '../stores/usePersonaStore';
 import { useLanguage } from '../i18n/LanguageContext';
-import PersonaEditor from '../components/PersonaEditor';
 import PersonaCard from '../components/PersonaCard';
 import ArchetypeFilter from '../components/ArchetypeFilter';
 
-interface Props {
-  onBack: () => void;
-}
-
-export default function PersonaManagePage({ onBack }: Props) {
+export default function PersonaManagePage() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
-  const [personas, setPersonas] = useState<PersonaSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const { personas, loading, fetchPersonas } = usePersonaStore();
+
   const [filterArchetype, setFilterArchetype] = useState<string | null>(null);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    fetchPersonas()
-      .then(setPersonas)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const filteredPersonas = useMemo(() => {
     if (!filterArchetype) return personas;
@@ -39,44 +22,25 @@ export default function PersonaManagePage({ onBack }: Props) {
     if (!window.confirm(t('msgConfirmDelete'))) return;
     try {
       await deletePersona(id);
-      load();
+      fetchPersonas();
     } catch (e) {
       alert(t('errDeletePersona'));
     }
   };
 
-  if (editingId || isCreating) {
-    return (
-      <PersonaEditor
-        personaId={editingId}
-        onSave={() => {
-          setEditingId(null);
-          setIsCreating(false);
-          load();
-        }}
-        onCancel={() => {
-          setEditingId(null);
-          setIsCreating(false);
-        }}
-      />
-    );
-  }
-
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-8 max-w-[900px] mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[22px] font-bold tracking-tight">{t('tabPersonas')}</h2>
           <button
-            onClick={() => setIsCreating(true)}
+            onClick={() => navigate('/personas/new')}
             className="px-4 py-1.5 bg-[#0075de] text-white text-sm rounded-md hover:bg-[#0066c0] transition-colors"
           >
             {t('actionNewPersona')}
           </button>
         </div>
 
-        {/* Filter */}
         <div className="mb-6">
           <ArchetypeFilter active={filterArchetype} onChange={setFilterArchetype} />
         </div>
@@ -94,7 +58,7 @@ export default function PersonaManagePage({ onBack }: Props) {
               <PersonaCard
                 key={p.id}
                 persona={p}
-                onEdit={setEditingId}
+                onEdit={(id) => navigate(`/personas/${id}/edit`)}
                 onDelete={handleDelete}
               />
             ))}

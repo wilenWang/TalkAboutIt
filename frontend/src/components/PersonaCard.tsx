@@ -1,14 +1,11 @@
 import type { PersonaSummary } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { isImageAvatar } from '../utils/avatar';
 
 interface Props {
   persona: PersonaSummary;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-}
-
-function isImageAvatar(avatar: string): boolean {
-  return avatar.startsWith('http') || avatar.includes('/');
 }
 
 export default function PersonaCard({ persona, onEdit, onDelete }: Props) {

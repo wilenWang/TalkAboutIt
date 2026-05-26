@@ -1,45 +1,27 @@
 import { useState, useEffect, useMemo } from 'react';
-import { fetchPersonas } from '../api/client';
-import type { PersonaSummary } from '../types';
+import { useAppStore } from '../stores/useAppStore';
+import { usePersonaStore } from '../stores/usePersonaStore';
 import { useLanguage } from '../i18n/LanguageContext';
 import ArchetypeFilter from './ArchetypeFilter';
+import { isImageAvatar } from '../utils/avatar';
 
-interface Props {
-  selected: string[];
-  onChange: (selected: string[]) => void;
-}
-
-function isImageAvatar(avatar: string): boolean {
-  return avatar.startsWith('http') || avatar.includes('/');
-}
-
-export default function PersonaSelector({ selected, onChange }: Props) {
+export default function PersonaSelector() {
   const { t, f } = useLanguage();
-  const [personas, setPersonas] = useState<PersonaSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { personas, loading, fetchPersonas } = usePersonaStore();
+  const { selectedPersonas, togglePersona } = useAppStore();
+
   const [filterArchetype, setFilterArchetype] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPersonas()
-      .then(setPersonas)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    fetchPersonas();
+  }, [fetchPersonas]);
 
   const filteredPersonas = useMemo(() => {
     if (!filterArchetype) return personas;
     return personas.filter((p) => p.archetype === filterArchetype);
   }, [personas, filterArchetype]);
 
-  const toggle = (id: string) => {
-    if (selected.includes(id)) {
-      onChange(selected.filter((s) => s !== id));
-    } else if (selected.length < 4) {
-      onChange([...selected, id]);
-    }
-  };
-
-  if (loading) {
+  if (loading && personas.length === 0) {
     return (
       <div className="w-[20%] flex-shrink-0 bg-[#f6f5f4] border-r border-black/[0.06] flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center text-sm text-[#a39e98]">
@@ -51,18 +33,16 @@ export default function PersonaSelector({ selected, onChange }: Props) {
 
   return (
     <div className="w-[20%] flex-shrink-0 bg-[#f6f5f4] border-r border-black/[0.06] flex flex-col h-full overflow-hidden">
-      {/* Header */}
       <div className="px-3 py-2.5 border-b border-black/[0.06]">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold text-black/95">{t('labelParticipants')}</h3>
           <span className="text-xs text-[#0075de] font-medium">
-            {f('fmtSelectedCount', { n: selected.length })}
+            {f('fmtSelectedCount', { n: selectedPersonas.length })}
           </span>
         </div>
         <ArchetypeFilter active={filterArchetype} onChange={setFilterArchetype} />
       </div>
 
-      {/* Grid */}
       <div className="flex-1 overflow-y-auto p-2">
         {filteredPersonas.length === 0 ? (
           <div className="text-center py-10">
@@ -72,11 +52,11 @@ export default function PersonaSelector({ selected, onChange }: Props) {
         ) : (
           <div className="grid grid-cols-3 gap-1.5">
             {filteredPersonas.map((p) => {
-              const isSelected = selected.includes(p.id);
+              const isSelected = selectedPersonas.includes(p.id);
               return (
                 <div
                   key={p.id}
-                  onClick={() => toggle(p.id)}
+                  onClick={() => togglePersona(p.id)}
                   className={`
                     relative rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all
                     aspect-square
@@ -86,19 +66,16 @@ export default function PersonaSelector({ selected, onChange }: Props) {
                     }
                   `}
                 >
-                  {/* Avatar */}
                   {isImageAvatar(p.avatar) ? (
                     <img src={p.avatar} alt={p.name} className="w-9 h-9 rounded-lg object-cover" />
                   ) : (
                     <span className="text-[26px] leading-none">{p.avatar}</span>
                   )}
 
-                  {/* Name */}
                   <div className="text-[10px] font-semibold text-black/95 truncate w-full text-center mt-1">
                     {p.name}
                   </div>
 
-                  {/* Selected check */}
                   {isSelected && (
                     <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-[#0075de] rounded-full flex items-center justify-center">
                       <span className="text-white text-[8px]">✓</span>

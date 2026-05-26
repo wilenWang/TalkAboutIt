@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import MessageCard from './MessageCard';
 import { useLanguage } from '../i18n/LanguageContext';
+import { isImageAvatar } from '../utils/avatar';
 
 export interface StreamMessage {
   id: string;
@@ -48,8 +49,12 @@ export default function MessageStream({ messages, currentSpeaker }: Props) {
 
           {currentSpeaker && (
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-white border border-black/[0.06] flex items-center justify-center text-lg">
-                {currentSpeaker.avatar}
+              <div className="w-9 h-9 rounded-lg bg-white border border-black/[0.06] flex items-center justify-center text-lg overflow-hidden">
+                {isImageAvatar(currentSpeaker.avatar) ? (
+                  <img src={currentSpeaker.avatar} alt={currentSpeaker.name} className="w-full h-full object-cover" />
+                ) : (
+                  currentSpeaker.avatar
+                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[13px] font-semibold text-black/90">{currentSpeaker.name}</span>

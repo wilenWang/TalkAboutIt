@@ -1,4 +1,5 @@
 import { useLanguage } from '../i18n/LanguageContext';
+import { isImageAvatar } from '../utils/avatar';
 
 interface Props {
   avatar: string;
@@ -6,10 +7,6 @@ interface Props {
   round: number;
   content: string;
   isEven: boolean;
-}
-
-function isImageAvatar(avatar: string): boolean {
-  return avatar.startsWith('http') || avatar.includes('/');
 }
 
 function renderMarkdown(text: string): React.ReactNode[] {

@@ -1,17 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getRoundtable } from '../api/client';
-import type { PersonaSummary, ReplayMessage } from '../types';
+import type { ReplayMessage } from '../types';
 import MessageCard from '../components/MessageCard';
+import { usePersonaStore } from '../stores/usePersonaStore';
 import { useLanguage } from '../i18n/LanguageContext';
 
-interface Props {
-  id: string;
-  personaList: PersonaSummary[];
-  onBack: () => void;
-}
-
-export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
+export default function HistoryDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t, f } = useLanguage();
+  const { personas: personaList } = usePersonaStore();
+
   const [topic, setTopic] = useState('');
   const [messages, setMessages] = useState<ReplayMessage[]>([]);
   const [participants, setParticipants] = useState<string[]>([]);
@@ -20,6 +20,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) return;
     setLoading(true);
     setError(null);
     getRoundtable(id)
@@ -28,7 +29,7 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
         setParticipants(snap.personas);
         setStatus(snap.status);
         const mapped: ReplayMessage[] = snap.messages.map((m) => {
-          const matched = personaList.find((p) => p.id === m.persona_id);
+          const matched = personaList.find((p: import('../types').PersonaSummary) => p.id === m.persona_id);
           return {
             id: m.id,
             avatar: matched?.avatar ?? '🤖',
@@ -47,7 +48,6 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
       });
   }, [id, personaList, t]);
 
-  // 按轮次分组
   const grouped = useMemo(() => {
     const map = new Map<number, ReplayMessage[]>();
     messages.forEach((m) => {
@@ -64,67 +64,46 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
 
   const getPersonaNames = (ids: string[]) =>
     ids
-      .map((personaId) => personaList.find((p) => p.id === personaId)?.name ?? personaId)
+      .map((personaId) => personaList.find((p: import('../types').PersonaSummary) => p.id === personaId)?.name ?? personaId)
       .join(t('sepParticipants'));
 
   const formatStatus = (value: string) => {
     switch (value) {
-      case 'pending':
-        return t('statusPending');
-      case 'running':
-        return t('statusRunning');
-      case 'completed':
-        return t('statusCompleted');
-      case 'failed':
-        return t('statusFailed');
-      default:
-        return value;
+      case 'pending': return t('statusPending');
+      case 'running': return t('statusRunning');
+      case 'completed': return t('statusCompleted');
+      case 'failed': return t('statusFailed');
+      default: return value;
     }
   };
 
-  const formatParticipants = () => getPersonaNames(participants);
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="px-6 py-3 flex items-center gap-3 border-b border-black/[0.06]">
-        <button
-          onClick={onBack}
-          className="text-sm text-[#615d59] hover:text-black/95 transition-colors"
-        >
-          ← {t('actionBackToList')}
-        </button>
-        <span className="text-lg font-bold tracking-tight">✦ TalkAboutIt</span>
-        <span className="text-[13px] text-[#a39e98]">{t('pageReplay')}</span>
-      </header>
+    <main className="max-w-[720px] mx-auto px-6 py-8">
+      {loading && (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-5 bg-black/[0.06] rounded w-1/2" />
+          <div className="h-4 bg-black/[0.04] rounded w-full" />
+          <div className="h-4 bg-black/[0.04] rounded w-5/6" />
+          <div className="h-4 bg-black/[0.04] rounded w-full" />
+        </div>
+      )}
 
-      <main className="max-w-[720px] mx-auto px-6 py-8">
-        {/* 加载态 */}
-        {loading && (
-          <div className="space-y-4 animate-pulse">
-            <div className="h-5 bg-black/[0.06] rounded w-1/2" />
-            <div className="h-4 bg-black/[0.04] rounded w-full" />
-            <div className="h-4 bg-black/[0.04] rounded w-5/6" />
-            <div className="h-4 bg-black/[0.04] rounded w-full" />
-          </div>
-        )}
-
-        {/* 错误态 */}
-        {!loading && error && (
-          <div className="text-center py-12">
-            <div className="text-3xl mb-2">⚠️</div>
-            <p className="text-sm text-red-500 mb-3">{error}</p>
-            <button
-              onClick={() => {
-                setLoading(true);
-                setError(null);
+      {!loading && error && (
+        <div className="text-center py-12">
+          <div className="text-3xl mb-2">⚠️</div>
+          <p className="text-sm text-red-500 mb-3">{error}</p>
+          <button
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              if (id) {
                 getRoundtable(id)
                   .then((snap) => {
                     setTopic(snap.topic);
                     setParticipants(snap.personas);
                     setStatus(snap.status);
                     const mapped: ReplayMessage[] = snap.messages.map((m) => {
-                      const matched = personaList.find((p) => p.id === m.persona_id);
+                      const matched = personaList.find((p: import('../types').PersonaSummary) => p.id === m.persona_id);
                       return {
                         id: m.id,
                         avatar: matched?.avatar ?? '🤖',
@@ -138,69 +117,62 @@ export default function HistoryDetailPage({ id, personaList, onBack }: Props) {
                   })
                   .catch((e) => setError(e instanceof Error ? t(e.message) : t('errReplayFailed')))
                   .finally(() => setLoading(false));
-              }}
-              className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
-            >
-              {t('actionRetry')}
-            </button>
+              }
+            }}
+            className="px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
+          >
+            {t('actionRetry')}
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          <div className="mb-6">
+            <h2 className="text-[22px] font-bold tracking-tight mb-1">{topic || t('discussionReplay')}</h2>
+            <p className="text-sm text-[#615d59]">{f('fmtParticipantsLabel', { names: getPersonaNames(participants) })}</p>
+            <p className="text-sm text-[#615d59]">{f('fmtStatusLabel', { s: formatStatus(status) })}</p>
+            <p className="text-sm text-[#615d59]">{f('fmtSummaryLine', { msg: messages.length, rnd: grouped.length })}</p>
           </div>
-        )}
 
-        {/* 回放内容 */}
-        {!loading && !error && (
-          <>
-            <div className="mb-6">
-              <h2 className="text-[22px] font-bold tracking-tight mb-1">{topic || t('discussionReplay')}</h2>
-              <p className="text-sm text-[#615d59]">
-                {f('fmtParticipantsLabel', { names: formatParticipants() })}
-              </p>
-              <p className="text-sm text-[#615d59]">
-                {f('fmtStatusLabel', { s: formatStatus(status) })}
-              </p>
-              <p className="text-sm text-[#615d59]">
-                {f('fmtSummaryLine', { msg: messages.length, rnd: grouped.length })}
-              </p>
+          {messages.length === 0 && (
+            <div className="text-center py-16 text-[#a39e98]">
+              <div className="text-5xl mb-3">📭</div>
+              <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('msgNoMessagesInDiscussion')}</h3>
+              <button
+                onClick={() => navigate('/history')}
+                className="mt-4 px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
+              >
+                {t('actionBackToList')}
+              </button>
             </div>
+          )}
 
-            {messages.length === 0 && (
-              <div className="text-center py-16 text-[#a39e98]">
-                <div className="text-5xl mb-3">📭</div>
-                <h3 className="text-lg font-semibold text-[#615d59] mb-1">{t('msgNoMessagesInDiscussion')}</h3>
-                <button
-                  onClick={onBack}
-                  className="mt-4 px-4 py-1.5 rounded text-sm font-semibold bg-[#0075de] text-white hover:bg-[#0066cc]"
-                >
-                  {t('actionBackToList')}
-                </button>
+          {grouped.map((g) => (
+            <div key={g.round} className="mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-black/[0.06]" />
+                <span className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
+                  {f('fmtRoundLabel', { n: g.round })}
+                </span>
+                <div className="h-px flex-1 bg-black/[0.06]" />
               </div>
-            )}
-
-            {grouped.map((g) => (
-              <div key={g.round} className="mb-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-px flex-1 bg-black/[0.06]" />
-                  <span className="text-[11px] font-semibold text-[#a39e98] uppercase tracking-wider">
-                    {f('fmtRoundLabel', { n: g.round })}
-                  </span>
-                  <div className="h-px flex-1 bg-black/[0.06]" />
-                </div>
-                <div>
-                  {g.messages.map((msg, idx) => (
-                    <MessageCard
-                      key={msg.id}
-                      avatar={msg.avatar}
-                      author={msg.author}
-                      round={msg.round}
-                      content={msg.content}
-                      isEven={idx % 2 === 1}
-                    />
-                  ))}
-                </div>
+              <div>
+                {g.messages.map((msg, idx) => (
+                  <MessageCard
+                    key={msg.id}
+                    avatar={msg.avatar}
+                    author={msg.author}
+                    round={msg.round}
+                    content={msg.content}
+                    isEven={idx % 2 === 1}
+                  />
+                ))}
               </div>
-            ))}
-          </>
-        )}
-      </main>
-    </div>
+            </div>
+          ))}
+        </>
+      )}
+    </main>
   );
 }
