@@ -61,7 +61,6 @@ export const translations = {
   inputSearch:        { 'zh-CN': '搜索...',            'en-US': 'Search...' },
   labelTyping:        { 'zh-CN': '正在输入...',         'en-US': 'Typing...' },
   labelLoading:       { 'zh-CN': '加载中...',          'en-US': 'Loading...' },
-  labelParticipantsF: { 'zh-CN': '参与者：{names}',       'en-US': 'Participants: {names}' },
 
   // ── Archetype names ──
   archetypeVisionary:   { 'zh-CN': '远见者', 'en-US': 'Visionary' },
@@ -130,6 +129,7 @@ export const translations = {
   fmtRoundLabel:       { 'zh-CN': '第 {n} 轮',            'en-US': 'Round {n}' },
   fmtRoundCount:       { 'zh-CN': '{n} 轮',               'en-US': '{n} rounds' },
   fmtStatusLabel:      { 'zh-CN': '状态：{s}',             'en-US': 'Status: {s}' },
+  fmtParticipantsLabel: { 'zh-CN': '参与者：{names}',       'en-US': 'Participants: {names}' },
   fmtSummaryLine:      { 'zh-CN': '共 {msg} 条消息 · {rnd} 轮', 'en-US': '{msg} messages · {rnd} rounds' },
 } as const;
 
@@ -143,3 +143,7 @@ export interface FormatParams {
   fmtParticipantsLabel: { names: string };
   fmtSummaryLine:      { msg: number; rnd: number };
 }
+
+type AssertNever<T extends never> = T;
+export type _AllFormatParamsHaveTranslations = AssertNever<Exclude<keyof FormatParams, TranslationKey>>;
+export type _AllFormatTranslationsHaveParams = AssertNever<Exclude<Extract<TranslationKey, `fmt${string}`>, keyof FormatParams>>;

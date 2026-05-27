@@ -67,6 +67,15 @@ func TestEngine_Run_MockLLM(t *testing.T) {
 		t.Fatalf("NewStore failed: %v", err)
 	}
 	defer store.Close()
+	for _, raw := range []string{p1, p2} {
+		p, err := persona.ValidateJSON([]byte(raw))
+		if err != nil {
+			t.Fatalf("ValidateJSON failed: %v", err)
+		}
+		if err := store.Save(*p); err != nil {
+			t.Fatalf("Save persona failed: %v", err)
+		}
+	}
 
 	rt := &session.Roundtable{
 		ID:           "rt_engine_001",

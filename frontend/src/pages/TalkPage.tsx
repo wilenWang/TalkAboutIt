@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopicPanel from '../components/TopicPanel';
 import PersonaSelector from '../components/PersonaSelector';
@@ -12,7 +12,7 @@ import type { PersonaSummary } from '../types';
 
 export default function TalkPage() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { personas: personaList, fetchPersonas } = usePersonaStore();
 
   const {
@@ -24,13 +24,11 @@ export default function TalkPage() {
     currentSpeaker,
     error,
     rtId,
-    currentRound,
     setTopic,
     setRounds,
     startCreating,
     startStreaming,
     complete,
-    reset,
     setCurrentSpeaker,
     setError,
     setRtId,
@@ -42,17 +40,7 @@ export default function TalkPage() {
     setSelectedPersonas,
   } = useAppStore();
 
-  const messagesRef = useRef(messages);
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  const currentSpeakerRef = useRef(currentSpeaker);
-  useEffect(() => {
-    currentSpeakerRef.current = currentSpeaker;
-  }, [currentSpeaker]);
-
-  const resumeFromEventIdRef = useRef('');
+  const [resumeFromEventId, setResumeFromEventId] = useState('');
   const [sseUrl, setSseUrl] = useState<string | null>(null);
 
   const handleSSEMessage = useCallback((msg: import('../hooks/useSSE').SSEMessage) => {
@@ -122,43 +110,10 @@ export default function TalkPage() {
     (err) => {
       console.error('SSE error:', err);
     },
-    { initialLastEventId: resumeFromEventIdRef.current || undefined }
+    { initialLastEventId: resumeFromEventId || undefined }
   );
 
-  // Load persona list on mount
-  useEffect(() => {
-    fetchPersonas();
-  }, [fetchPersonas]);
-
-  // Check URL param ?rt={id} on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const rtId = params.get('rt');
-    if (rtId) {
-      loadSnapshot(rtId);
-    }
-  }, []);
-
-  // Update messages when personaList loads (for avatar/name matching)
-  useEffect(() => {
-    if (personaList.length > 0 && messages.length > 0) {
-      const updated = messages.map((m) => {
-        if (m.status === 'done') {
-          const matched = personaList.find((p: PersonaSummary) => p.id === m.personaId);
-          if (matched && (m.author !== matched.name || m.avatar !== matched.avatar)) {
-            return { ...m, author: matched.name, avatar: matched.avatar };
-          }
-        }
-        return m;
-      });
-      const changed = updated.some((m, i) => m !== messages[i]);
-      if (changed) {
-        setMessages(updated);
-      }
-    }
-  }, [personaList, messages.length, setMessages]);
-
-  const loadSnapshot = async (id: string) => {
+  const loadSnapshot = useCallback(async (id: string) => {
     try {
       const snap = await getRoundtable(id);
       setRtId(snap.id);
@@ -184,7 +139,7 @@ export default function TalkPage() {
         useAppStore.setState({ status: 'completed' });
       } else if (snap.status === 'running') {
         startStreaming();
-        resumeFromEventIdRef.current = String(snap.last_event_id);
+        setResumeFromEventId(String(snap.last_event_id));
         setSseUrl(`/api/v1/roundtables/${id}/events`);
       } else {
         useAppStore.setState({ status: 'idle' });
@@ -192,24 +147,68 @@ export default function TalkPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errSnapshotFailed'));
     }
-  };
+  }, [
+    personaList,
+    setError,
+    setMessages,
+    setRounds,
+    setRtId,
+    setSelectedPersonas,
+    setTopic,
+    startStreaming,
+    t,
+  ]);
 
-  const handleStart = async () => {
+  // Load persona list on mount
+  useEffect(() => {
+    fetchPersonas();
+  }, [fetchPersonas]);
+
+  // Check URL param ?rt={id} on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rtId = params.get('rt');
+    if (rtId) {
+      loadSnapshot(rtId);
+    }
+  }, [loadSnapshot]);
+
+  // Update messages when personaList loads (for avatar/name matching)
+  useEffect(() => {
+    if (personaList.length > 0 && messages.length > 0) {
+      const updated = messages.map((m) => {
+        if (m.status === 'done') {
+          const matched = personaList.find((p: PersonaSummary) => p.id === m.personaId);
+          if (matched && (m.author !== matched.name || m.avatar !== matched.avatar)) {
+            return { ...m, author: matched.name, avatar: matched.avatar };
+          }
+        }
+        return m;
+      });
+      const changed = updated.some((m, i) => m !== messages[i]);
+      if (changed) {
+        setMessages(updated);
+      }
+    }
+  }, [personaList, messages, setMessages]);
+
+  const handleStart = async (topicOverride?: string) => {
     if (selectedPersonas.length < 2) return;
     setError(null);
     startCreating();
 
     try {
+      const finalTopic = topicOverride ?? topic;
       const rt = await createRoundtable({
-        topic,
+        topic: finalTopic,
         personas: selectedPersonas,
         max_rounds: rounds,
-        language: 'zh-CN',
+        language,
       });
 
       setRtId(rt.id);
       window.history.pushState({}, '', `/?rt=${rt.id}`);
-      resumeFromEventIdRef.current = '';
+      setResumeFromEventId('');
       setSseUrl(`/api/v1/roundtables/${rt.id}/events`);
 
       await startRoundtable(rt.id);

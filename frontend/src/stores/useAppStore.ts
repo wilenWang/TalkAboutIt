@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { StreamMessage } from '../components/MessageStream';
-import type { SSEMessage } from '../hooks/useSSE';
 
 export type AppStatus = 'idle' | 'creating' | 'streaming' | 'completed';
 

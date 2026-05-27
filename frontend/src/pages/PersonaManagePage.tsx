@@ -23,7 +23,7 @@ export default function PersonaManagePage() {
     try {
       await deletePersona(id);
       fetchPersonas();
-    } catch (e) {
+    } catch {
       alert(t('errDeletePersona'));
     }
   };

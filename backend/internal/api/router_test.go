@@ -42,6 +42,19 @@ func setupTestHandler(t *testing.T) (*Handler, *session.Store, string) {
 	return h, store, dbPath
 }
 
+func saveRawPersonas(t *testing.T, store *session.Store, raws ...string) {
+	t.Helper()
+	for _, raw := range raws {
+		p, err := persona.ValidateJSON([]byte(raw))
+		if err != nil {
+			t.Fatalf("ValidateJSON failed: %v", err)
+		}
+		if err := store.Save(*p); err != nil {
+			t.Fatalf("Save persona failed: %v", err)
+		}
+	}
+}
+
 func TestListPersonas(t *testing.T) {
 	h, _, _ := setupTestHandler(t)
 
@@ -235,6 +248,7 @@ func TestStartRoundtable(t *testing.T) {
 	p2 := `{"schema_version":"persona.v1","id":"test-s2","name":"S2","display_name":"S2","avatar":"👾","role_title":"T","description":"D","tags":[],"language":{"primary":"zh-CN","allowed":["zh-CN"],"default_output":"follow_user","style_hint":""},"stance":{"default_position":"con","intensity":3,"biases":[],"taboos":[]},"core_beliefs":[],"speaking_style":{"tone":"calm","cadence":"balanced","verbosity":3,"signature_patterns":[],"do":[],"dont":[]},"knowledge_scope":{"domains":[],"expertise_level":{},"time_cutoff":"","allowed_inference":"medium","unknown_handling":"","forbidden_claims":[]},"interaction_rules":{"address_others":"","disagreement_style":"","interruption_policy":"never","question_policy":"","concession_policy":"","avoid":[]},"debate_goal":{"primary_goal":"test","secondary_goals":[],"win_condition":"","loss_condition":""},"prompting":{"system_preamble":"","reply_constraints":[]},"examples":{"opening_line":"hello","sample_rebuttal":""}}`
 	os.WriteFile(filepath.Join(tmpDir, "test-s1.json"), []byte(p1), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "test-s2.json"), []byte(p2), 0644)
+	saveRawPersonas(t, store, p1, p2)
 
 	loader := persona.NewLoader(tmpDir)
 	eng := engine.NewEngine(store, loader, nil)
@@ -282,6 +296,7 @@ func TestGetRoundtable_SnapshotWithMessages(t *testing.T) {
 	p2 := `{"schema_version":"persona.v1","id":"test-s2","name":"S2","display_name":"S2","avatar":"👾","role_title":"T","description":"D","tags":[],"language":{"primary":"zh-CN","allowed":["zh-CN"],"default_output":"follow_user","style_hint":""},"stance":{"default_position":"con","intensity":3,"biases":[],"taboos":[]},"core_beliefs":[],"speaking_style":{"tone":"calm","cadence":"balanced","verbosity":3,"signature_patterns":[],"do":[],"dont":[]},"knowledge_scope":{"domains":[],"expertise_level":{},"time_cutoff":"","allowed_inference":"medium","unknown_handling":"","forbidden_claims":[]},"interaction_rules":{"address_others":"","disagreement_style":"","interruption_policy":"never","question_policy":"","concession_policy":"","avoid":[]},"debate_goal":{"primary_goal":"test","secondary_goals":[],"win_condition":"","loss_condition":""},"prompting":{"system_preamble":"","reply_constraints":[]},"examples":{"opening_line":"hello","sample_rebuttal":""}}`
 	os.WriteFile(filepath.Join(tmpDir, "test-s1.json"), []byte(p1), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "test-s2.json"), []byte(p2), 0644)
+	saveRawPersonas(t, store, p1, p2)
 
 	loader := persona.NewLoader(tmpDir)
 	eng := engine.NewEngine(store, loader, nil)
@@ -433,6 +448,40 @@ func TestSSEHandler_LastEventIDReconnect(t *testing.T) {
 	// 不应重复 event 1 和 2
 	if strings.Contains(body2, "id: 1") || strings.Contains(body2, "id: 2") {
 		t.Errorf("重连后不应重复 event 1/2，响应体:\n%s", body2)
+	}
+}
+
+func TestEventBus_DropsSlowSubscribers(t *testing.T) {
+	bus := NewEventBus(nil)
+	ch, dropped, cancel := bus.Subscribe("rt_slow")
+	defer cancel()
+
+	for i := 0; i < 65; i++ {
+		bus.Publish("rt_slow", session.Event{
+			RoundtableID: "rt_slow",
+			EventID:      i + 1,
+			EventType:    "message_chunk",
+			PayloadJSON:  `{"chunk":"x"}`,
+		})
+	}
+
+	select {
+	case <-dropped:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("expected slow subscriber to be dropped instead of silently losing events")
+	}
+
+	drained := 0
+	for {
+		select {
+		case <-ch:
+			drained++
+		default:
+			if drained != 64 {
+				t.Fatalf("expected buffered events to remain available before reconnect, got %d", drained)
+			}
+			return
+		}
 	}
 }
 

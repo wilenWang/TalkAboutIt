@@ -7,7 +7,7 @@ interface Props {
   onTopicChange: (value: string) => void;
   rounds: number;
   onRoundsChange: (value: number) => void;
-  onStart: () => void;
+  onStart: (topicOverride?: string) => void;
   canStart: boolean;
   loading: boolean;
   hint?: string;
@@ -53,15 +53,16 @@ export default function TopicPanel({
   };
 
   const handleStart = async () => {
+    let nextTopic = topic;
     if (files.length > 0) {
       const contents = await Promise.all(files.map(readFileAsText));
       const fileSection = contents
         .map((c, i) => `--- ${files[i].name} ---\n${c}`)
         .join('\n\n');
-      const merged = topic ? `${topic}\n\n${fileSection}` : fileSection;
-      onTopicChange(merged);
+      nextTopic = topic ? `${topic}\n\n${fileSection}` : fileSection;
+      onTopicChange(nextTopic);
     }
-    onStart();
+    onStart(nextTopic);
   };
 
   return (

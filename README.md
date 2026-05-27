@@ -11,7 +11,7 @@ TalkAboutIt brings legendary thinkers back to life as AI personas, seating them 
 - **5 built-in personas** — Steve Jobs, Elon Musk, Naval Ravikant, Zhang Xiaolong (WeChat), Zhang Yiming (ByteDance)
 - **Multi-round debates** — Personas reference each other's arguments and evolve their positions
 - **Per-persona conversation context** — Uses DeepSeek's automatic KV-cache for efficient multi-turn reasoning
-- **System-level i18n** — English & Simplified Chinese UI, debate language independently selectable
+- **System-level i18n** — English & Simplified Chinese UI, with debate language following the selected system language
 - **Real-time streaming** — Watch the debate unfold via Server-Sent Events (SSE)
 - **History replay** — Browse and replay past debates
 - **Zero-cost caching** — DeepSeek Context Caching is enabled by default, no configuration needed
@@ -20,7 +20,7 @@ TalkAboutIt brings legendary thinkers back to life as AI personas, seating them 
 
 ### Prerequisites
 
-- **Go** 1.21+
+- **Go** 1.26+
 - **Node.js** 18+
 - **DeepSeek API Key** — [Get one free](https://platform.deepseek.com/api_keys)
 
@@ -71,7 +71,15 @@ llm:
       # api_key is read from DEEPSEEK_API_KEY env var
 
 session:
+  db_path: data/sessions.db    # SQLite database path
   max_rounds: 3              # 1-5 rounds per debate
+```
+
+### Development checks
+
+```bash
+cd backend && go test ./...
+cd frontend && npm run lint && npm run test && npm run build
 ```
 
 ### Supported Providers
@@ -89,10 +97,10 @@ session:
 ```
 frontend (React + TypeScript + Vite)     backend (Go)
 ┌─────────────────────────────┐     ┌──────────────────────────┐
-│  App.tsx                     │     │  Engine                   │
-│  ├─ PersonaSelector          │ SSE │  ├─ Run()                 │
-│  ├─ TopicInput               │◄───►│  ├─ LLMGenerate()         │
-│  ├─ LanguageToggle           │     │  └─ ConversationContext   │
+│  React Router + Zustand      │     │  Engine                   │
+│  ├─ TopicPanel               │ SSE │  ├─ Run()                 │
+│  ├─ PersonaSelector          │◄───►│  ├─ LLMGenerate()         │
+│  ├─ Header Language Menu     │     │  └─ ConversationContext   │
 │  ├─ MessageStream            │     │                           │
 │  └─ i18n/LanguageContext     │     │  Per-Persona Context      │
 │                              │     │  ┌───────┬───────┬───────┐│

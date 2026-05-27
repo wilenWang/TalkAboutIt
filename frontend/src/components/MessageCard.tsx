@@ -129,7 +129,7 @@ function parseInline(text: string): React.ReactNode[] {
   }
 
   if (lastIndex < text.length) {
-    parts.push(<span key={key++}>{text.slice(lastIndex)}</span>);
+    parts.push(<span key={key}>{text.slice(lastIndex)}</span>);
   }
 
   return parts;

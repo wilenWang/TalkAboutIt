@@ -11,7 +11,7 @@ TalkAboutIt 将传奇人物以 AI 人格的形式"复活"，让他们围坐在�
 - **5 个内置人物** — Steve Jobs、Elon Musk、Naval Ravikant、张小龙、张一鸣
 - **多轮辩论** — 人物互相引用、观点逐步演进
 - **按人物拆分对话上下文** — 利用 DeepSeek 自动 KV-Cache，跨轮次高效复用
-- **系统级国际化** — 英文 / 简体中文 UI，辩论语言独立可选
+- **系统级国际化** — 英文 / 简体中文 UI，辩论语言跟随当前系统语言
 - **实时流式输出** — 通过 SSE 实时观看辩论过程
 - **历史记录回放** — 浏览和回放过往辩论
 - **零成本缓存** — DeepSeek 上下文缓存默认开启，无需额外配置
@@ -20,7 +20,7 @@ TalkAboutIt 将传奇人物以 AI 人格的形式"复活"，让他们围坐在�
 
 ### 环境要求
 
-- **Go** 1.21+
+- **Go** 1.26+
 - **Node.js** 18+
 - **DeepSeek API Key** — [免费获取](https://platform.deepseek.com/api_keys)
 
@@ -62,7 +62,15 @@ llm:
       model: deepseek-v4-pro
 
 session:
+  db_path: data/sessions.db    # SQLite 数据库路径
   max_rounds: 3              # 每场辩论 1-5 轮
+```
+
+### 开发检查
+
+```bash
+cd backend && go test ./...
+cd frontend && npm run lint && npm run test && npm run build
 ```
 
 ### 支持的模型供应商
@@ -80,10 +88,10 @@ session:
 ```
 frontend (React + TypeScript + Vite)     backend (Go)
 ┌─────────────────────────────┐     ┌──────────────────────────┐
-│  App.tsx                     │     │  Engine                   │
-│  ├─ PersonaSelector          │ SSE │  ├─ Run()                 │
-│  ├─ TopicInput               │◄───►│  ├─ LLMGenerate()         │
-│  ├─ LanguageToggle           │     │  └─ ConversationContext   │
+│  React Router + Zustand      │     │  Engine                   │
+│  ├─ TopicPanel               │ SSE │  ├─ Run()                 │
+│  ├─ PersonaSelector          │◄───►│  ├─ LLMGenerate()         │
+│  ├─ Header Language Menu     │     │  └─ ConversationContext   │
 │  ├─ MessageStream            │     │                           │
 │  └─ i18n/LanguageContext     │     │  Per-Persona Context      │
 │                              │     │  ┌───────┬───────┬───────┐│

@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/wilenwang/talkaboutit/internal/api"
 	"github.com/wilenwang/talkaboutit/internal/config"
@@ -22,9 +24,18 @@ func main() {
 		cfg = config.DefaultConfig()
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	if port := os.Getenv("PORT"); port != "" {
+		if parsed, err := strconv.Atoi(port); err == nil {
+			cfg.Server.Port = parsed
+		} else {
+			log.Printf("忽略无效 PORT=%q: %v", port, err)
+		}
+	}
+	if cfg.Server.Port == 0 {
+		cfg.Server.Port = 8080
+	}
+	if cfg.Server.Host == "" {
+		cfg.Server.Host = "0.0.0.0"
 	}
 
 	// 初始化 persona loader
@@ -99,7 +110,7 @@ func main() {
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 
-	addr := ":" + port
+	addr := net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port))
 	log.Printf("TalkAboutIt server listening on %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("服务器启动失败: %v", err)

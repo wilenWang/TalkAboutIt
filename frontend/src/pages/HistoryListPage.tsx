@@ -97,7 +97,7 @@ export default function HistoryListPage() {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-black/95 truncate mb-1">{item.topic}</h3>
                   <p className="text-[13px] text-[#615d59] truncate">
-                    {t('labelParticipantsF')}{getPersonaNames(item.personas)}
+                    {f('fmtParticipantsLabel', { names: getPersonaNames(item.personas) })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">

@@ -19,62 +19,94 @@ import (
 // EventBus 管理 SSE 订阅者，支持按 roundtable ID 广播。
 type EventBus struct {
 	mu          sync.RWMutex
-	subscribers map[string]map[chan session.Event]struct{} // roundtableID -> set of channels
+	subscribers map[string]map[*eventSubscriber]struct{} // roundtableID -> set of subscribers
 	store       *session.Store
+}
+
+type eventSubscriber struct {
+	ch   chan session.Event
+	done chan struct{}
+	once sync.Once
+}
+
+func (s *eventSubscriber) stop() {
+	s.once.Do(func() {
+		close(s.done)
+	})
 }
 
 // NewEventBus 创建事件总线。
 func NewEventBus(store *session.Store) *EventBus {
 	return &EventBus{
-		subscribers: make(map[string]map[chan session.Event]struct{}),
+		subscribers: make(map[string]map[*eventSubscriber]struct{}),
 		store:       store,
 	}
 }
 
-// Subscribe 为指定 roundtable 订阅事件流，返回接收通道和取消函数。
-func (b *EventBus) Subscribe(roundtableID string) (chan session.Event, func()) {
-	ch := make(chan session.Event, 64)
+// Subscribe 为指定 roundtable 订阅事件流，返回接收通道、断开信号和取消函数。
+func (b *EventBus) Subscribe(roundtableID string) (<-chan session.Event, <-chan struct{}, func()) {
+	sub := &eventSubscriber{
+		ch:   make(chan session.Event, 64),
+		done: make(chan struct{}),
+	}
 	b.mu.Lock()
 	if b.subscribers[roundtableID] == nil {
-		b.subscribers[roundtableID] = make(map[chan session.Event]struct{})
+		b.subscribers[roundtableID] = make(map[*eventSubscriber]struct{})
 	}
-	b.subscribers[roundtableID][ch] = struct{}{}
+	b.subscribers[roundtableID][sub] = struct{}{}
 	b.mu.Unlock()
 
 	cancel := func() {
-		b.mu.Lock()
-		defer b.mu.Unlock()
-		if subs, ok := b.subscribers[roundtableID]; ok {
-			delete(subs, ch)
-			if len(subs) == 0 {
-				delete(b.subscribers, roundtableID)
-			}
-		}
-		// 不主动 close(ch)，避免与 Publish 并发时 send on closed channel panic
+		b.removeSubscriber(roundtableID, sub)
 	}
-	return ch, cancel
+	return sub.ch, sub.done, cancel
+}
+
+func (b *EventBus) removeSubscriber(roundtableID string, sub *eventSubscriber) {
+	removed := false
+	b.mu.Lock()
+	if subs, ok := b.subscribers[roundtableID]; ok {
+		if _, ok := subs[sub]; ok {
+			delete(subs, sub)
+			removed = true
+		}
+		if len(subs) == 0 {
+			delete(b.subscribers, roundtableID)
+		}
+	}
+	b.mu.Unlock()
+	if removed {
+		sub.stop()
+	}
+}
+
+func (b *EventBus) dropSlowSubscriber(roundtableID string, sub *eventSubscriber) {
+	b.removeSubscriber(roundtableID, sub)
+}
+
+func (b *EventBus) snapshotSubscribers(roundtableID string) []*eventSubscriber {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	if subs, ok := b.subscribers[roundtableID]; ok {
+		result := make([]*eventSubscriber, 0, len(subs))
+		for sub := range subs {
+			result = append(result, sub)
+		}
+		return result
+	}
+	return nil
 }
 
 // Publish 向指定 roundtable 的所有订阅者广播事件。
 func (b *EventBus) Publish(roundtableID string, evt session.Event) {
-	b.mu.RLock()
-	subs, ok := b.subscribers[roundtableID]
-	if !ok {
-		b.mu.RUnlock()
-		return
-	}
-	// 复制订阅者列表避免在发送时持有读锁
-	chans := make([]chan session.Event, 0, len(subs))
-	for ch := range subs {
-		chans = append(chans, ch)
-	}
-	b.mu.RUnlock()
-
-	for _, ch := range chans {
+	subs := b.snapshotSubscribers(roundtableID)
+	for _, sub := range subs {
 		select {
-		case ch <- evt:
+		case <-sub.done:
+		case sub.ch <- evt:
 		default:
-			// 通道满则丢弃，避免阻塞
+			// 慢消费者不再静默丢事件：断开连接，让客户端通过 Last-Event-ID 重连补发。
+			b.dropSlowSubscriber(roundtableID, sub)
 		}
 	}
 }
@@ -121,7 +153,7 @@ func (h *Handler) SSEHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 订阅实时事件（必须先订阅，再补历史，避免竞态漏事件）
-	ch, cancel := h.bus.Subscribe(id)
+	ch, dropped, cancel := h.bus.Subscribe(id)
 	defer cancel()
 
 	// 补发历史事件，并用 seen map 去重
@@ -158,6 +190,9 @@ func (h *Handler) SSEHandler(w http.ResponseWriter, r *http.Request) {
 			writeEvent(w, evt)
 			flusher.Flush()
 
+		case <-dropped:
+			return
+
 		case <-ticker.C:
 			fmt.Fprintf(w, ": keepalive\n\n")
 			flusher.Flush()
@@ -190,10 +225,10 @@ func (h *Handler) BroadcastEvent(ctx context.Context, roundtableID string, event
 
 // CreateRoundtableRequest 创建 roundtable 的请求体。
 type CreateRoundtableRequest struct {
-	Topic      string   `json:"topic"`
-	Personas   []string `json:"personas"`
-	MaxRounds  int      `json:"max_rounds"`
-	Language   string   `json:"language"`
+	Topic     string   `json:"topic"`
+	Personas  []string `json:"personas"`
+	MaxRounds int      `json:"max_rounds"`
+	Language  string   `json:"language"`
 }
 
 // CreateRoundtableResponse 创建 roundtable 的响应体。
@@ -209,17 +244,17 @@ type CreateRoundtableResponse struct {
 
 // RoundtableSnapshot 是 GET /roundtables/{id} 的响应。
 type RoundtableSnapshot struct {
-	ID           string            `json:"id"`
-	Topic        string            `json:"topic"`
-	Personas     []string          `json:"personas"`
-	MaxRounds    int               `json:"max_rounds"`
-	Language     string            `json:"language"`
-	Status       string            `json:"status"`
-	CreatedAt    string            `json:"created_at"`
-	StartedAt    *string           `json:"started_at,omitempty"`
-	FinishedAt   *string           `json:"finished_at,omitempty"`
-	LastEventID  int               `json:"last_event_id"`
-	Messages     []session.Message `json:"messages"`
+	ID          string            `json:"id"`
+	Topic       string            `json:"topic"`
+	Personas    []string          `json:"personas"`
+	MaxRounds   int               `json:"max_rounds"`
+	Language    string            `json:"language"`
+	Status      string            `json:"status"`
+	CreatedAt   string            `json:"created_at"`
+	StartedAt   *string           `json:"started_at,omitempty"`
+	FinishedAt  *string           `json:"finished_at,omitempty"`
+	LastEventID int               `json:"last_event_id"`
+	Messages    []session.Message `json:"messages"`
 }
 
 // CreateRoundtable 创建新的圆桌讨论。

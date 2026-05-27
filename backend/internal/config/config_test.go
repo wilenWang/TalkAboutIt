@@ -118,11 +118,13 @@ llm:
 	os.Setenv("TALKABOUTIT_LLM_DEFAULT", "claude")
 	os.Setenv("TALKABOUTIT_LLM_OPENAI_API_KEY", "env-key")
 	os.Setenv("TALKABOUTIT_LLM_OPENAI_MODEL", "gpt-4o-mini")
+	os.Setenv("TALKABOUTIT_DATABASE_PATH", "env.db")
 	defer func() {
 		os.Unsetenv("TALKABOUTIT_SERVER_PORT")
 		os.Unsetenv("TALKABOUTIT_LLM_DEFAULT")
 		os.Unsetenv("TALKABOUTIT_LLM_OPENAI_API_KEY")
 		os.Unsetenv("TALKABOUTIT_LLM_OPENAI_MODEL")
+		os.Unsetenv("TALKABOUTIT_DATABASE_PATH")
 	}()
 
 	cfg, err := Load(configPath)
@@ -141,6 +143,9 @@ llm:
 	}
 	if prov := cfg.LLM.Providers["openai"]; prov.Model != "gpt-4o-mini" {
 		t.Errorf("openai model 期望被覆盖为 gpt-4o-mini，得到 %s", prov.Model)
+	}
+	if cfg.Database.Path != "env.db" {
+		t.Errorf("database.path 期望被覆盖为 env.db，得到 %s", cfg.Database.Path)
 	}
 }
 

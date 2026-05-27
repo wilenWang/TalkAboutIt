@@ -59,6 +59,25 @@ func TestStore_CreateGetUpdate(t *testing.T) {
 	}
 }
 
+func TestStore_AppliesSchemaMigrations(t *testing.T) {
+	dbPath := "/tmp/test_talkaboutit_migrations_" + time.Now().Format("20060102150405") + ".db"
+	defer os.Remove(dbPath)
+
+	store, err := NewStore(dbPath)
+	if err != nil {
+		t.Fatalf("NewStore failed: %v", err)
+	}
+	defer store.Close()
+
+	var name string
+	if err := store.db.QueryRow(`SELECT name FROM schema_migrations WHERE version = 1`).Scan(&name); err != nil {
+		t.Fatalf("schema migration was not recorded: %v", err)
+	}
+	if name != "initial_schema" {
+		t.Fatalf("unexpected migration name: %s", name)
+	}
+}
+
 func TestStore_PersonaCRUDAndSessionState(t *testing.T) {
 	ctx := context.Background()
 	dbPath := "/tmp/test_talkaboutit_persona_" + time.Now().Format("20060102150405") + ".db"

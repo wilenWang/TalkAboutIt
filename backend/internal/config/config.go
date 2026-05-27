@@ -47,8 +47,8 @@ type PersonasConfig struct {
 
 // SessionConfig 是会话与持久化相关配置。
 type SessionConfig struct {
-	DBPath     string `yaml:"db_path"`
-	MaxRounds  int    `yaml:"max_rounds"`
+	DBPath    string `yaml:"db_path"`
+	MaxRounds int    `yaml:"max_rounds"`
 }
 
 // DatabaseConfig 是数据库相关配置（别名，兼容不同命名习惯）。
@@ -107,6 +107,7 @@ func Load(path string) (*Config, error) {
 //   - TALKABOUTIT_PERSONAS_DIR
 //   - TALKABOUTIT_SESSION_DB_PATH
 //   - TALKABOUTIT_SESSION_MAX_ROUNDS
+//   - TALKABOUTIT_DATABASE_PATH
 func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("TALKABOUTIT_SERVER_PORT"); v != "" {
 		if port, err := strconv.Atoi(v); err == nil {
@@ -147,5 +148,8 @@ func applyEnvOverrides(cfg *Config) {
 		if mr, err := strconv.Atoi(v); err == nil {
 			cfg.Session.MaxRounds = mr
 		}
+	}
+	if v := os.Getenv("TALKABOUTIT_DATABASE_PATH"); v != "" {
+		cfg.Database.Path = v
 	}
 }

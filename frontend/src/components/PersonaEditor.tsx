@@ -45,7 +45,7 @@ export default function PersonaEditor() {
         await createPersona(p);
       }
       navigate('/personas');
-    } catch (e) {
+    } catch {
       alert(isEditMode ? t('errUpdatePersona') : t('errCreatePersona'));
     } finally {
       setSaving(false);

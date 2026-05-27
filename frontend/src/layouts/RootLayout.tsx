@@ -13,14 +13,9 @@ export default function RootLayout() {
   const path = location.pathname;
   const isPersonasPage = path === '/personas' || path.startsWith('/personas/');
   const isHistoryPage = path === '/history' || path.startsWith('/history/');
-  const isTalkPage = path === '/' || path.startsWith('/?');
 
   const navPage = isPersonasPage ? 'personas' : 'talk';
-
-  let headerTitle = '';
-  if (isPersonasPage) headerTitle = 'tabPersonas';
-  else if (isHistoryPage) headerTitle = 'pageHistory';
-  else headerTitle = 'pageRoundtable';
+  const headerTitle = isPersonasPage ? 'tabPersonas' : isHistoryPage ? 'pageHistory' : 'pageRoundtable';
 
   // Load personas on mount
   useEffect(() => {

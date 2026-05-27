@@ -58,7 +58,7 @@ type Event struct {
 
 // NewStore 打开（或创建）SQLite 数据库并初始化表结构。
 func NewStore(dbPath string) (*Store, error) {
-	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)")
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("打开数据库失败: %w", err)
 	}
@@ -79,8 +79,17 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) initSchema() error {
-	schema := `
+type migration struct {
+	version int
+	name    string
+	sql     string
+}
+
+var migrations = []migration{
+	{
+		version: 1,
+		name:    "initial_schema",
+		sql: `
 CREATE TABLE IF NOT EXISTS roundtables (
   id TEXT PRIMARY KEY,
   topic TEXT NOT NULL,
@@ -194,9 +203,58 @@ CREATE TABLE IF NOT EXISTS persona_session_states (
   FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE,
   FOREIGN KEY (roundtable_id) REFERENCES roundtables(id) ON DELETE CASCADE
 );
-`
-	_, err := s.db.Exec(schema)
-	return err
+`,
+	},
+}
+
+func (s *Store) initSchema() error {
+	if _, err := s.db.Exec(`
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+`); err != nil {
+		return err
+	}
+
+	for _, m := range migrations {
+		applied, err := s.isMigrationApplied(m.version)
+		if err != nil {
+			return err
+		}
+		if applied {
+			continue
+		}
+		if err := s.applyMigration(m); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) isMigrationApplied(version int) (bool, error) {
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(1) FROM schema_migrations WHERE version = ?`, version).Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (s *Store) applyMigration(m migration) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(m.sql); err != nil {
+		return fmt.Errorf("应用迁移 %d %s 失败: %w", m.version, m.name, err)
+	}
+	if _, err := tx.Exec(`INSERT INTO schema_migrations (version, name) VALUES (?, ?)`, m.version, m.name); err != nil {
+		return fmt.Errorf("记录迁移 %d %s 失败: %w", m.version, m.name, err)
+	}
+	return tx.Commit()
 }
 
 // CreateRoundtable 创建一张新的圆桌讨论。
