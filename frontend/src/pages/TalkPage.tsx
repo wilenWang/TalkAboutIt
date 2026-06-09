@@ -123,10 +123,13 @@ export default function TalkPage() {
 
       const historyMsgs = snap.messages.map((m) => {
         const matched = personaList.find((p) => p.id === m.persona_id);
+        const authorLabel = language === 'zh-CN'
+          ? (matched?.display_name ?? matched?.name ?? m.persona_id)
+          : (matched?.name ?? m.persona_id);
         return {
           id: m.id,
           avatar: matched?.avatar ?? '🤖',
-          author: matched?.name ?? m.persona_id,
+          author: authorLabel,
           personaId: m.persona_id,
           round: m.round,
           content: m.content,
@@ -179,8 +182,13 @@ export default function TalkPage() {
       const updated = messages.map((m) => {
         if (m.status === 'done') {
           const matched = personaList.find((p: PersonaSummary) => p.id === m.personaId);
-          if (matched && (m.author !== matched.name || m.avatar !== matched.avatar)) {
-            return { ...m, author: matched.name, avatar: matched.avatar };
+          if (matched) {
+            const expectedAuthor = language === 'zh-CN'
+              ? (matched.display_name ?? matched.name)
+              : matched.name;
+            if (m.author !== expectedAuthor || m.avatar !== matched.avatar) {
+              return { ...m, author: expectedAuthor, avatar: matched.avatar };
+            }
           }
         }
         return m;
