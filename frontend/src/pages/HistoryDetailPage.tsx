@@ -9,7 +9,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 export default function HistoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t, f } = useLanguage();
+  const { t, f, language } = useLanguage();
   const { personas: personaList } = usePersonaStore();
 
   const [topic, setTopic] = useState('');
@@ -18,6 +18,11 @@ export default function HistoryDetailPage() {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const getAuthor = (matched: { name: string; display_name: string } | undefined, fallback: string) =>
+    language === 'zh-CN'
+      ? (matched?.display_name ?? matched?.name ?? fallback)
+      : (matched?.name ?? fallback);
 
   useEffect(() => {
     if (!id) return;
@@ -33,7 +38,7 @@ export default function HistoryDetailPage() {
           return {
             id: m.id,
             avatar: matched?.avatar ?? '🤖',
-            author: matched?.name ?? m.persona_id,
+            author: getAuthor(matched, m.persona_id),
             personaId: m.persona_id,
             round: m.round,
             content: m.content,
@@ -64,7 +69,12 @@ export default function HistoryDetailPage() {
 
   const getPersonaNames = (ids: string[]) =>
     ids
-      .map((personaId) => personaList.find((p: import('../types').PersonaSummary) => p.id === personaId)?.name ?? personaId)
+      .map((personaId) => {
+        const matched = personaList.find((p: import('../types').PersonaSummary) => p.id === personaId);
+        return language === 'zh-CN'
+          ? (matched?.display_name ?? matched?.name ?? personaId)
+          : (matched?.name ?? personaId);
+      })
       .join(t('sepParticipants'));
 
   const formatStatus = (value: string) => {
@@ -107,7 +117,7 @@ export default function HistoryDetailPage() {
                       return {
                         id: m.id,
                         avatar: matched?.avatar ?? '🤖',
-                        author: matched?.name ?? m.persona_id,
+                        author: getAuthor(matched, m.persona_id),
                         personaId: m.persona_id,
                         round: m.round,
                         content: m.content,

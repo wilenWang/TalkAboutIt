@@ -161,11 +161,12 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 
 			// speaking 事件
 			evt, err := e.store.AddEvent(ctx, tableID, "speaking", &r, &si, &pid, nil, map[string]interface{}{
-				"round":         round,
-				"speaker_index": i,
-				"persona_id":    p.ID,
-				"persona_name":  p.Name,
-				"avatar":        p.Avatar,
+				"round":           round,
+				"speaker_index":   i,
+				"persona_id":      p.ID,
+				"persona_name":    p.DisplayName,
+				"persona_name_en": p.Name,
+				"avatar":          p.Avatar,
 			})
 			if err != nil {
 				return fmt.Errorf("发送 speaking 失败: %w", err)
@@ -180,7 +181,11 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 			peers := make([]string, 0, len(personas)-1)
 			for _, peer := range personas {
 				if peer.ID != p.ID {
-					peers = append(peers, peer.Name)
+					if rt.Language == "zh-CN" {
+						peers = append(peers, peer.DisplayName)
+					} else {
+						peers = append(peers, peer.Name)
+					}
 				}
 			}
 			convo := contexts[p.ID]
@@ -279,13 +284,14 @@ func (e *Engine) Run(ctx context.Context, tableID string) error {
 			// message_done 事件
 			msgID := fmt.Sprintf("%s_r%d_s%d", tableID, round, i)
 			evt, err = e.store.AddEvent(ctx, tableID, "message_done", &r, &si, &pid, &msgID, map[string]interface{}{
-				"round":         round,
-				"speaker_index": i,
-				"persona_id":    p.ID,
-				"persona_name":  p.Name,
-				"avatar":        p.Avatar,
-				"content":       content,
-				"message_id":    msgID,
+				"round":           round,
+				"speaker_index":   i,
+				"persona_id":      p.ID,
+				"persona_name":    p.DisplayName,
+				"persona_name_en": p.Name,
+				"avatar":          p.Avatar,
+				"content":         content,
+				"message_id":      msgID,
 			})
 			if err != nil {
 				return fmt.Errorf("发送 message_done 失败: %w", err)

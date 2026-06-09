@@ -9,7 +9,8 @@ interface Props {
 }
 
 export default function PersonaCard({ persona, onEdit, onDelete }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const label = language === 'zh-CN' ? persona.display_name : persona.name;
 
   return (
     <div className="group relative bg-white rounded-xl aspect-square flex flex-col items-center justify-center border border-black/[0.06] cursor-pointer overflow-hidden hover:shadow-[rgba(0,0,0,0.04)_0px_4px_18px] transition-shadow">
@@ -17,7 +18,7 @@ export default function PersonaCard({ persona, onEdit, onDelete }: Props) {
       {isImageAvatar(persona.avatar) ? (
         <img
           src={persona.avatar}
-          alt={persona.name}
+          alt={label}
           className="w-16 h-16 rounded-xl object-cover mb-2"
         />
       ) : (
@@ -25,7 +26,7 @@ export default function PersonaCard({ persona, onEdit, onDelete }: Props) {
       )}
 
       {/* Name */}
-      <div className="font-semibold text-sm text-black/95">{persona.name}</div>
+      <div className="font-semibold text-sm text-black/95">{label}</div>
 
       {/* Archetype */}
       {persona.archetype && (
